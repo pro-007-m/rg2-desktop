@@ -1,0 +1,11 @@
+Mode: built-in image_gen; generate new image; transparent_background=true; no reference images.
+Final output: rg2-icon.png
+
+Final prompt:
+Use case: logo-brand
+Asset type: production Windows desktop application icon, square 1024 by 1024 PNG, genuinely transparent background outside the icon tile.
+Primary request: create a refined modern icon for RG2, an application for learning Rubik's Cube algorithms, matching its calm light Atelier and dark Graphite themes.
+Subject and composition: exactly one sculpted isometric 3x3 cube, precisely three rows and three columns of tiles on each of its three visible faces. Center it on a refined rounded-square graphite app-icon tile. The rounded-square tile occupies about 82 percent of the canvas, leaving generous completely transparent outer padding. The cube is large, balanced, and instantly legible as a cube at 16px and 32px icon sizes.
+Color palette: warm ivory top face, muted sage and forest-green left face, desaturated periwinkle/electric-blue right face. Thin graphite seams separate the nine tiles of each face. Restrained graphite rounded-square backing with a subtle edge.
+Style and lighting: polished minimal sculptural icon, gentle bevel lighting, subtle dimensionality, clean crisp silhouette, restrained soft shading, no ornamental detail.
+Constraints: no letters, no words, no logos, no watermark, no complex glow, no extra objects, no floating tiles, no checkerboard drawn into the background. Preserve real transparency around the rounded square. Exactly a 3x3 cube, not 2x2 or 4x4.

@@ -1,0 +1,22 @@
+{
+ "vm_reference_values": {
+  "839": "R",
+  "439": "F",
+  "848": "U",
+  "370": "D",
+  "713": "L",
+  "251": "B",
+  "464": "M",
+  "731": "E",
+  "379": "S",
+  "294": "x",
+  "780": "y",
+  "422": "z",
+  "489": "r",
+  "281": "l",
+  "257": "u",
+  "720": "b",
+  "380": "/"
+ },
+ "source": "Original-author resource values aligned to current APK ordered move arrays; all non-VM symbols checked exact."
+}

@@ -1,0 +1,17 @@
+bin/
+obj/
+publish/
+artifacts/
+.vs/
+node_modules/
+TestResults/
+__pycache__/
+*.pyc
+*.user
+*.suo
+*.pdb
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

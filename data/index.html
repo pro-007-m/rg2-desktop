@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru" data-theme="atelier">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'">
+  <title>RG2 · Desktop</title>
+  <link rel="icon" type="image/png" href="app-icon.png">
+  <script>try{const p=localStorage.getItem('rg2.theme')||'system';document.documentElement.dataset.theme=p==='system'?(matchMedia('(prefers-color-scheme:dark)').matches?'graphite':'atelier'):p;}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="tools.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" data-home aria-label="RG2 — главная">
+        <img class="brand-mark" src="app-icon.png" alt="">
+        <span><strong>RG2</strong><small>CUBE LIBRARY</small></span>
+      </a>
+      <div class="nav-label">ОБУЧАЛКИ</div>
+      <nav class="primary-nav" id="category-nav" aria-label="Головоломки"></nav>
+      <div class="sidebar-divider"></div>
+      <nav class="primary-nav" id="utility-nav" aria-label="Дополнительно"></nav>
+      <div class="sidebar-bottom">
+        <button class="nav-button" id="settings-button" type="button"><svg><use href="#i-settings"/></svg><span>Настройки</span></button>
+        <div class="sidebar-signature"><i></i><span>RG2 · DESKTOP</span></div>
+      </div>
+    </aside>
+    <main class="workspace" id="workspace">
+      <header class="toolbar">
+        <div class="toolbar-leading">
+          <button class="icon-button sidebar-toggle" id="sidebar-toggle" title="Открыть меню" aria-label="Открыть меню"><svg><use href="#i-menu"/></svg></button>
+          <div class="history-controls"><button class="icon-button" id="history-back" title="Назад · Alt+←" aria-label="Назад" disabled><svg><use href="#i-back"/></svg></button><button class="icon-button" id="history-forward" title="Вперёд · Alt+→" aria-label="Вперёд" disabled><svg><use href="#i-forward"/></svg></button></div>
+          <nav class="breadcrumbs" id="breadcrumbs" aria-label="Путь к разделу"></nav>
+        </div>
+        <label class="searchbox"><svg><use href="#i-search"/></svg><input id="global-search" type="search" autocomplete="off" spellcheck="false" placeholder="Поиск по всей библиотеке" aria-label="Поиск по всей библиотеке"><kbd>/</kbd></label>
+      </header>
+      <div id="content" class="page-content" tabindex="-1"><div class="loading-state"><span class="loading-cube"></span><p>Открываем библиотеку…</p></div></div>
+    </main>
+  </div>
+  <dialog id="image-dialog" class="image-dialog"><button class="icon-button zoom-close" id="zoom-close" aria-label="Закрыть изображение"><svg><use href="#i-close"/></svg></button><img id="zoom-image" alt=""><p>Esc — закрыть</p></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z M4 7.5l8 4.5 8-4.5M12 12v9M8 5.2l8 4.5M8 9.8v9M16 9.8v9M4 12l8 4.5L20 12"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5"/></symbol>
+    <symbol id="i-diamond" viewBox="0 0 24 24"><path d="m12 3 8 9-8 9-8-9 8-9ZM4 12h16M12 3v18"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M4 4h6V2a2 2 0 0 1 4 0v2h6v6h-2a2 2 0 0 0 0 4h2v6h-6v-2a2 2 0 0 0-4 0v2H4v-6h2a2 2 0 0 0 0-4H4V4Z" transform="translate(0 1) scale(.95)"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.9 6.5.9-4.7 4.6 1.1 6.5-5.7-3.1-5.7 3.1 1.1-6.5-4.7-4.6 6.5-.9L12 3Z"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="14" r="7.5"/><path d="M12 10v4l3 2M9 2h6M12 2v4M18.5 7.5l2-2"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="m10 3-.7 2.8-2 .9L4.8 6 3 9l2.1 1.9v2.2L3 15l1.8 3 2.5-.7 2 .9L10 21h4l.7-2.8 2-.9 2.5.7 1.8-3-2.1-1.9v-2.2L21 9l-1.8-3-2.5.7-2-.9L14 3h-4Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6"/></symbol>
+    <symbol id="i-forward" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C8 2 3 4 3 4v15s5-2 9 1c4-3 9-1 9-1V4s-5-2-9 1v15"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="4"/><path d="m10 8 6 4-6 4V8Z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/></symbol>
+    <symbol id="i-system" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  </svg>
+</body>
+</html>

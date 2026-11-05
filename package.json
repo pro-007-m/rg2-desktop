@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node tests/tools.test.cjs && node tests/algorithms.test.cjs && node tests/solver-core.test.mjs && node tests/solver-catalog.test.mjs"
+    "test": "node tests/tools.test.cjs && node tests/algorithms.test.cjs && node tests/settings.test.cjs && node tests/solver-core.test.mjs && node tests/solver-catalog.test.mjs && node tests/solver-scramble.test.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"

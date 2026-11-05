@@ -1,0 +1,144 @@
+{
+  "version": "1.2.0",
+  "checkedOn": "2026-11-05",
+  "checks": {
+    "sourceCatalog": "60 phases, 560 records, 2063 original asset hashes, 212 notation diagrams",
+    "algorithmFormatting": "13 regression checks passed",
+    "solverCatalog": "12 checks passed; all OLL/COLL/PLL cases",
+    "scrambleMath": "180 canonical, rotated, custom-center and incomplete-input cases; replay of all 54 stickers and inverse",
+    "settings": "source descriptions and authors button absent; local controls retained"
+  },
+  "scrambleControls": {
+    "newRandom20FromInputCenters": true,
+    "consecutiveRandomsDiffer": true,
+    "noAutomaticSolve": true,
+    "exactSeparateCopy": true,
+    "reloadMatchingRecord": true,
+    "solveAndRestartKeepScramble": true,
+    "newRandomCancelsAnimationAndUsesInputFrame": true,
+    "newRandomCancelsOldWorker": true,
+    "manualPaintClearsProvenance": true,
+    "clearClearsProvenance": true,
+    "solvedClearsProvenance": true,
+    "rotatedInputCentersAndCaption": true,
+    "staleRecordNotRestored": true,
+    "invalidCentersBlocked": true,
+    "completeSolveKeepsOriginalScramble": true,
+    "completedSolveRestartKeepsOriginalScramble": true,
+    "errors": [],
+    "remote": []
+  },
+  "layout": {
+    "viewports": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "theme": "atelier",
+        "panelHeight": 600,
+        "minFont": 12,
+        "equalBottoms": true,
+        "editorGap": 18
+      },
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "theme": "graphite",
+        "panelHeight": 600,
+        "minFont": 12,
+        "equalBottoms": true,
+        "editorGap": 18
+      },
+      {
+        "viewport": {
+          "width": 1000,
+          "height": 700
+        },
+        "theme": "atelier",
+        "panelHeight": 560,
+        "minFont": 12,
+        "equalBottoms": true,
+        "editorGap": 18
+      },
+      {
+        "viewport": {
+          "width": 1000,
+          "height": 700
+        },
+        "theme": "graphite",
+        "panelHeight": 560,
+        "minFont": 12,
+        "equalBottoms": true,
+        "editorGap": 18
+      },
+      {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "theme": "atelier",
+        "panelHeight": 640,
+        "minFont": 12,
+        "equalBottoms": true,
+        "editorGap": 18
+      },
+      {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "theme": "graphite",
+        "panelHeight": 640,
+        "minFont": 12,
+        "equalBottoms": true,
+        "editorGap": 18
+      }
+    ],
+    "paletteRgb": [
+      {
+        "view": "default",
+        "pixels": [
+          8589,
+          12095,
+          13868,
+          16082,
+          6859,
+          5520
+        ]
+      },
+      {
+        "view": "underside",
+        "pixels": [
+          4683,
+          1076,
+          5770,
+          18643,
+          20119,
+          7005
+        ]
+      }
+    ],
+    "cameraResetPreservesCubeAndHistory": true,
+    "animationDoesNotMoveWorkspace": true,
+    "longAlgorithmContained": true,
+    "cameraResetPixelError": 0.0021693880131681484,
+    "settingsSourcesRemoved": true,
+    "errors": [],
+    "externalRequests": []
+  },
+  "native": {
+    "version": "1.2.0",
+    "nativeWebView2": true,
+    "sourcesAbsentFromSettings": true,
+    "random20Moves": true,
+    "sequenceReproducesAll54Stickers": true,
+    "cameraInPlayback": true,
+    "completeCfopSolve": true,
+    "solutionMoves": 46,
+    "scrambleRetainedAfterSolve": true,
+    "errors": []
+  }
+}

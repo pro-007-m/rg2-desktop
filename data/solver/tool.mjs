@@ -1,14 +1,17 @@
-import {SOLVED,applyAlg,applyMove,validate,stateKey,isCross,isF2L,isOLL,isSolved,areCornersSolved} from './core.mjs';
+import {SOLVED,applyMove,validate,stateKey,isCross,isF2L,isOLL,isSolved,areCornersSolved} from './core.mjs';
 import {createSolverView} from './view.mjs';
+import {createScramble,restoreScramble} from './scramble.mjs';
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}};
 const save=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{}};
 const labels={CROSS:'креста',F2L:'пары F2L',LAST_LAYER:'OLL / COLL',COLL:'COLL',EPLL:'EPLL',PLL:'PLL'};
+const SCRAMBLE_KEY='rg2.cfop.scramble.v1';
 export function mount(container){
  let disposed=false,worker=null,jobId=0,revision=0,pending=null,abort=null,running=false,paused=true,active=false,stage=null,decision=null,queue=[],executed=[],history=[],more=0,normalize=true,branch=null;
- let initial=read('rg2.cfop.input',Array.from(SOLVED)),state=Uint8Array.from(initial),settings=read('rg2.cfop.settings',{});
+ let initial=read('rg2.cfop.input',Array.from(SOLVED)),settings=read('rg2.cfop.settings',{});
  if(!Array.isArray(initial)||initial.length!==54)initial=Array.from(SOLVED);
- const view=createSolverView(container,{onInputChange,onSolve:solve,onDemo:demo,onChoose:choose,onPause:pause,onResume:resume,onStepForward:()=>play(true),onStepBack:back,onRestart:restart,onMore:moreSearch,onSettingsChange:changeSettings},settings);
- settings=view.getSettings();view.setInput(initial);
+ let state=Uint8Array.from(initial),scrambleRecord=restoreScramble(read(SCRAMBLE_KEY,null),initial),lastRandomMoves=scrambleRecord?.moves;
+ const view=createSolverView(container,{onInputChange,onSolve:solve,onRandom:newScramble,onDemo:newScramble,onChoose:choose,onPause:pause,onResume:resume,onStepForward:()=>play(true),onStepBack:back,onRestart:restart,onMore:moreSearch,onSettingsChange:changeSettings},settings);
+ settings=view.getSettings();view.setInput(initial);syncScramble(initial);
  function timeline(current=null){view.setTimeline({executed,current,upcoming:queue.slice(current?1:0),stage});}
  function cancel(){revision++;pending=null;worker?.terminate();worker=null;abort?.abort();abort=null;queue=[];running=false;view.setBusy(false);}
  function getWorker(){
@@ -34,18 +37,32 @@ export function mount(container){
   pending={id:++jobId,snapshot:Uint8Array.from(state)};
   getWorker().postMessage({id:pending.id,revision,state:Array.from(state),stage,settings,more,normalize:first});
  }
- function onInputChange(next){cancel();active=false;paused=true;initial=next;state=Uint8Array.from(next);executed=[];history=[];decision=null;stage=null;save('rg2.cfop.input',next);view.showValidation({errors:[]});view.showCandidates([]);view.showStatus('Раскраска изменена. Нажми «Проверить и найти решение».');timeline();}
+ function clearScramble(){scrambleRecord=null;try{localStorage.removeItem(SCRAMBLE_KEY);}catch{}view.setScramble?.(null);}
+ function syncScramble(input){scrambleRecord=restoreScramble(scrambleRecord,input);if(!scrambleRecord){clearScramble();return;}view.setScramble?.(scrambleRecord);save(SCRAMBLE_KEY,scrambleRecord);}
+ function onInputChange(next){cancel();active=false;paused=true;initial=Array.from(next);state=Uint8Array.from(next);executed=[];history=[];decision=null;stage=null;branch=null;clearScramble();save('rg2.cfop.input',next);view.showValidation({errors:[]});view.showCandidates([]);view.showStatus('Раскраска изменена. Нажми «Проверить и найти решение».');timeline();}
  function restoreDecision(){if(!decision)return;state=Uint8Array.from(decision.state);executed=[...decision.executedPrefix];history=[...decision.historyPrefix];queue=[];view.renderer.setState(state);}
  function moreSearch(){if(running||pending||!decision)return;restoreDecision();paused=true;more++;request(decision.stage,normalize);}
  function solve(next,config){
-  cancel();settings=config;initial=Array.from(next);state=Uint8Array.from(next);executed=[];history=[];decision=null;more=0;normalize=true;branch=null;stage=null;save('rg2.cfop.input',initial);
+  cancel();settings=config;initial=Array.from(next);state=Uint8Array.from(next);executed=[];history=[];decision=null;more=0;normalize=true;branch=null;stage=null;save('rg2.cfop.input',initial);syncScramble(initial);
   const report=validate(state);view.showValidation(report);timeline();
   if(!report.valid){active=false;view.showStatus('Исправь отмеченные ошибки раскраски.');return;}
-  active=true;paused=Boolean(settings.pauseForChoice);view.collapseEditor();
+  active=true;paused=Boolean(settings.pauseForChoice);
   if(isSolved(state)){stage='DONE';active=false;view.showStatus('Куб уже собран.');view.showCandidates([],{stage});timeline();return;}
   request('CROSS',true);
  }
- function demo(){const alg="R U2 F' L D2 B R2 U' F2 D L2 B' R U F' D2 R2 B2 U L'";const next=Array.from(applyAlg(SOLVED,alg));view.setInput(next);onInputChange(next);view.showStatus('Загружен пример. Нажми «Проверить и найти решение».');}
+ function newScramble(){
+  const input=view.getInput();
+  cancel();active=false;paused=true;decision=null;executed=[];history=[];stage=null;more=0;normalize=true;branch=null;
+  try{
+   const record=createScramble(input,{previousMoves:lastRandomMoves});lastRandomMoves=[...record.moves];
+   initial=[...record.state];state=Uint8Array.from(initial);view.setInput(initial);view.renderer.resetCamera();save('rg2.cfop.input',initial);
+   scrambleRecord=record;save(SCRAMBLE_KEY,record);view.setScramble?.(record);view.showValidation({errors:[]});view.showCandidates([]);timeline();
+   view.showStatus('Новый скрамбл готов: 20 ходов. Нажми «Проверить и найти решение», когда будешь готов.');
+  }catch(error){
+   initial=Array.from(input);state=Uint8Array.from(input);view.renderer.setState(state);syncScramble(initial);view.showCandidates([]);timeline();
+   view.showValidation({errors:[{code:'CENTERS',message:error.message,indices:[4,13,22,31,40,49]}]});view.showStatus('Для нового скрамбла сначала задай шесть разных цветов центров.');
+  }
+ }
  function choose(id,{single=false}={}){
   if(disposed||running||pending||!decision)return;
   const candidate=decision.candidates.find(c=>c.id===id);if(!candidate)return;
@@ -86,9 +103,9 @@ export function mount(container){
   if(decision&&history.length<decision.historyPrefix.length){decision=null;queue=[];view.showCandidates([],{stage:previous.stage});}
   queue.unshift(previous.token);stage=previous.stage;active=true;paused=true;revision++;view.renderer.setState(state);timeline();view.showStatus('Предыдущий ход. «Ход →» выполнит его снова.');
  }
- function restart(){cancel();active=false;paused=true;decision=null;executed=[];history=[];stage=null;state=Uint8Array.from(initial);view.setInput(initial);view.expandEditor();view.showCandidates([]);timeline();view.showStatus('Возврат к исходной раскраске. Нажми «Проверить и найти решение».');}
+ function restart(){cancel();active=false;paused=true;decision=null;executed=[];history=[];stage=null;state=Uint8Array.from(initial);view.setInput(initial);syncScramble(initial);view.expandEditor?.();view.showCandidates([]);timeline();view.showStatus('Возврат к исходной раскраске. Нажми «Проверить и найти решение».');}
  function changeSettings(next){const colorChanged=next.crossColor!==settings.crossColor,rankingChanged=next.rankMode!==settings.rankMode||next.prepareColl!==settings.prepareColl;settings=next;save('rg2.cfop.settings',settings);if(colorChanged&&active){restart();view.showStatus('Цвет креста изменён. Запусти поиск для исходной раскраски.');}else if(rankingChanged&&active&&!running){const target=decision?.stage||stage,frame=normalize;if(decision)restoreDecision();cancel();paused=true;request(target,frame);}}
- const api={dispose(){disposed=true;cancel();view.dispose();},debug(){return {state:Array.from(state),executed:[...executed],queue:[...queue],stage,paused,running,searching:Boolean(pending),active,candidates:decision?.candidates||[]};}};
+ const api={dispose(){disposed=true;cancel();view.dispose();},debug(){return {state:Array.from(state),input:[...initial],scramble:scrambleRecord?{...scrambleRecord,moves:[...scrambleRecord.moves],centers:[...scrambleRecord.centers],state:[...scrambleRecord.state]}:null,executed:[...executed],queue:[...queue],stage,paused,running,searching:Boolean(pending),active,candidates:decision?.candidates||[]};}};
  // Local QA and native automation use the same public actions as the visible controls.
  container.cfopSolver=api;
  return ()=>{api.dispose();delete container.cfopSolver;};

@@ -1,7 +1,8 @@
 import * as THREE from './vendor/three.module.js';
 import { FACELETS, moveInfo } from './core.mjs';
 
-export const PALETTE = ['#f6f5ec','#e64d4b','#30a274','#f2ce42','#ec9141','#4d8bd4'];
+// Screen approximation of GAN Full-bright Stickerless, shared with the editor.
+export const PALETTE = ['#F8F8F8','#F52A32','#00C853','#FFE600','#FF7A00','#1565E8'];
 export function createRenderer(container,{onPaint=()=>{}}={}) {
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(35,1,.1,80);
   const webgl=new THREE.WebGLRenderer({alpha:true,antialias:true});
@@ -9,13 +10,13 @@ export function createRenderer(container,{onPaint=()=>{}}={}) {
   webgl.outputColorSpace=THREE.SRGBColorSpace;
   container.appendChild(webgl.domElement);webgl.domElement.setAttribute('aria-label','Трёхмерная модель куба. Перетаскивание — поворот камеры, нажатие — выбор наклейки.');
   webgl.domElement.setAttribute('role','img');
-  scene.add(new THREE.HemisphereLight(0xffffff,0x53616b,2.5));
-  const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(4,7,5);scene.add(light);
+  scene.add(new THREE.AmbientLight(0xffffff,1));
+  // Colored surfaces stay readable even when viewed from below or behind.
   const root=new THREE.Group();scene.add(root);
   const bodyGeometry=new THREE.BoxGeometry(.97,.97,.97);
   const stickerGeometry=new THREE.PlaneGeometry(.80,.80);
   const bodyMaterial=new THREE.MeshStandardMaterial({color:0x161c24,roughness:.48,metalness:.12});
-  const colors=[...PALETTE,'#747e8a'].map(color=>new THREE.MeshStandardMaterial({color,roughness:.53,metalness:.02}));
+  const colors=[...PALETTE,'#747e8a'].map(color=>new THREE.MeshBasicMaterial({color,toneMapped:false}));
   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
   const normalZ=new THREE.Vector3(0,0,1);
   let state=null,editable=true,disposed=false,raf=0,animation=null,drag=null;
@@ -45,7 +46,7 @@ export function createRenderer(container,{onPaint=()=>{}}={}) {
   function resize(){const width=Math.max(1,container.clientWidth),height=Math.max(1,container.clientHeight);webgl.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();draw();}
   const observer=new ResizeObserver(resize);observer.observe(container);resize();
   function hit(event){const rect=webgl.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(stickers,false)[0]?.object.userData.index;}
-  function down(event){if(event.button!==0)return;drag={x:event.clientX,y:event.clientY,theta,phi,moved:false};webgl.domElement.setPointerCapture(event.pointerId);}
+  function down(event){if(event.button!==0)return;event.preventDefault();drag={x:event.clientX,y:event.clientY,theta,phi,moved:false};webgl.domElement.setPointerCapture(event.pointerId);}
   function move(event){if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>6)drag.moved=true;if(!drag.moved)return;theta=drag.theta-dx*.008;phi=Math.min(2.82,Math.max(.28,drag.phi-dy*.008));cameraPosition();draw();}
   function up(event){if(!drag)return;const moved=drag.moved;drag=null;if(!moved&&editable&&!animation){const index=hit(event);if(index!==undefined)onPaint(index);} }
   function wheel(event){event.preventDefault();distance=Math.max(5.9,Math.min(12,distance+event.deltaY*.008));cameraPosition();draw();}

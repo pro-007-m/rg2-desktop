@@ -6,8 +6,7 @@ export const CAP_FRONT = .505;
 export const CAP_CROWN = .018;
 const HALF = .945 / 2;
 
-// A GAN-style cap rounds the corners facing the four inner grid intersections
-// much more than the outer cube corners. Each cap still represents ONE facelet.
+// Preserve the nine GAN-style corner profiles and the public renderer API.
 export function capRadii(facelet) {
   const normal = new THREE.Vector3(...facelet.normal);
   const rotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),normal);
@@ -25,35 +24,85 @@ function outline(radii) {
   return s;
 }
 
-function segmentDistance(x,y,a,b) {
-  const dx=b.x-a.x,dy=b.y-a.y,length=dx*dx+dy*dy;
-  const t=length?Math.max(0,Math.min(1,((x-a.x)*dx+(y-a.y)*dy)/length)):0;
-  return Math.hypot(x-a.x-dx*t,y-a.y-dy*t);
+function exactFrontContour(frontTriangles) {
+  const points=[],pointIds=new Map(),edges=new Map();
+  const idFor=point=>{
+    const key=point.map(value=>Math.round(value*1e6)).join(',');
+    if(!pointIds.has(key)){pointIds.set(key,points.length);points.push(point);}
+    return pointIds.get(key);
+  };
+  for(const triangle of frontTriangles) {
+    const ids=triangle.map(idFor);
+    for(let i=0;i<3;i++) {
+      const a=ids[i],b=ids[(i+1)%3],key=a<b?a+','+b:b+','+a;
+      const edge=edges.get(key)||{a,b,count:0};edge.count++;edges.set(key,edge);
+    }
+  }
+  const neighbors=new Map(),boundary=[...edges.values()].filter(edge=>edge.count===1);
+  for(const {a,b} of boundary) {
+    if(!neighbors.has(a))neighbors.set(a,[]);
+    if(!neighbors.has(b))neighbors.set(b,[]);
+    neighbors.get(a).push(b);neighbors.get(b).push(a);
+  }
+  if(!boundary.length||[...neighbors.values()].some(list=>list.length!==2))throw new Error('Cap front contour must be a single closed loop.');
+  const start=boundary[0].a,ordered=[];
+  let previous=-1,current=start;
+  do {
+    ordered.push(points[current]);
+    const options=neighbors.get(current),next=options[0]===previous?options[1]:options[0];
+    previous=current;current=next;
+    if(ordered.length>boundary.length)throw new Error('Cap front contour could not be ordered.');
+  } while(current!==start);
+  if(ordered.length!==boundary.length)throw new Error('Cap front contour contains multiple loops.');
+  const signedArea=ordered.reduce((sum,point,i)=>{
+    const next=ordered[(i+1)%ordered.length];return sum+point[0]*next[1]-next[0]*point[1];
+  },0);
+  if(signedArea<0)ordered.reverse();
+  return ordered;
 }
 
 export function createCapGeometry(radii) {
-  const shape=outline(radii);
-  const original=new THREE.ExtrudeGeometry(shape,{depth:.10,bevelEnabled:true,bevelThickness:.035,bevelSize:.03,bevelSegments:5,steps:1,curveSegments:12});
-  original.computeBoundingBox();const front=original.boundingBox.max.z;
-  const boundary=shape.getPoints(24),distances=new Map();
-  function distance(x,y){const key=x.toFixed(5)+','+y.toFixed(5);if(!distances.has(key))distances.set(key,Math.min(...boundary.slice(1).map((b,i)=>segmentDistance(x,y,boundary[i],b))));return distances.get(key);}
-  const positions=original.attributes.position.array,out=[];
-  const push=point=>{const d=distance(point[0],point[1]);out.push(point[0],point[1],point[2]+CAP_CROWN*(1-Math.exp(-Math.pow(d/.16,2))));};
-  function subdivide(a,b,c,depth){
-    if(!depth){push(a);push(b);push(c);return;}
-    const mid=(u,v)=>u.map((value,i)=>(value+v[i])/2),ab=mid(a,b),bc=mid(b,c),ca=mid(c,a);
-    subdivide(a,ab,ca,depth-1);subdivide(ab,b,bc,depth-1);subdivide(ca,bc,c,depth-1);subdivide(ab,bc,ca,depth-1);
+  const original=new THREE.ExtrudeGeometry(outline(radii),{depth:.10,bevelEnabled:true,bevelThickness:.035,bevelSize:.03,bevelSegments:5,steps:1,curveSegments:12});
+  original.computeBoundingBox();
+  const front=original.boundingBox.max.z,position=original.getAttribute('position'),index=original.index;
+  const frontTriangles=[],out=[];
+  const triangleCount=(index?index.count:position.count)/3;
+  for(let triangle=0;triangle<triangleCount;triangle++) {
+    const points=[0,1,2].map(offset=>{
+      const i=index?index.getX(triangle*3+offset):triangle*3+offset;
+      return [position.getX(i),position.getY(i),position.getZ(i)];
+    });
+    if(points.every(point=>Math.abs(point[2]-front)<1e-6))frontTriangles.push(points);
+    else for(const point of points)out.push(...point);
   }
-  for(let i=0;i<positions.length;i+=9){
-    const a=Array.from(positions.slice(i,i+3)),b=Array.from(positions.slice(i+3,i+6)),c=Array.from(positions.slice(i+6,i+9));
-    if([a,b,c].every(p=>Math.abs(p[2]-front)<1e-5))subdivide(a,b,c,2);else out.push(...a,...b,...c);
+
+  // Reuse the extrusion's ACTUAL front/bevel perimeter, including its exact
+  // curve tessellation. Never subdivide only one side of a shared boundary.
+  // Every inner ring has the same number of vertices as that perimeter.
+  const contour=exactFrontContour(frontTriangles),count=contour.length;
+  const scales=[1,.8,.6,.4,.2];
+  const rings=scales.map(scale=>contour.map(([x,y,z])=>scale===1?[x,y,z]:[
+    x*scale,y*scale,front+CAP_CROWN*(1-scale*scale),
+  ]));
+  const pushTriangle=(a,b,c)=>out.push(...a,...b,...c);
+  for(let ring=0;ring<rings.length-1;ring++) {
+    const outer=rings[ring],inner=rings[ring+1];
+    for(let i=0;i<count;i++) {
+      const next=(i+1)%count;
+      pushTriangle(outer[i],outer[next],inner[i]);
+      pushTriangle(outer[next],inner[next],inner[i]);
+    }
   }
-  const raw=new THREE.BufferGeometry();raw.setAttribute('position',new THREE.Float32BufferAttribute(out,3));
-  const geometry=mergeVertices(raw,1e-5);geometry.computeVertexNormals();
-  // A flat tangent at the cap boundary avoids diagonal highlights from the
-  // triangulation while the interior vertices form a shallow convex crown.
-  const p=geometry.attributes.position,n=geometry.attributes.normal;
-  for(let i=0;i<p.count;i++)if(Math.abs(p.getZ(i)-front)<1e-5&&distance(p.getX(i),p.getY(i))<.001)n.setXYZ(i,0,0,1);
-  geometry.translate(0,0,CAP_FRONT-front);geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  const inner=rings[rings.length-1],center=[0,0,front+CAP_CROWN];
+  for(let i=0;i<count;i++)pushTriangle(inner[i],inner[(i+1)%count],center);
+
+  // The original extrusion's side walls, five bevel bands and closed back face
+  // remain intact. The unchanged outer front ring welds directly to those walls.
+  const raw=new THREE.BufferGeometry();
+  raw.setAttribute('position',new THREE.Float32BufferAttribute(out,3));
+  const geometry=mergeVertices(raw,1e-6);
+  geometry.computeVertexNormals();geometry.translate(0,0,CAP_FRONT-front);
+  geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  geometry.userData={topology:'closed-front-rings',frontRingVertices:count,frontRings:scales.length};
   raw.dispose();original.dispose();return geometry;
 }

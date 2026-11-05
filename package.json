@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node tests/tools.test.cjs && node tests/algorithms.test.cjs && node tests/settings.test.cjs && node tests/solver-core.test.mjs && node tests/solver-catalog.test.mjs && node tests/solver-scramble.test.mjs && node tests/solver-orientation.test.mjs && node tests/solver-worker-frame.test.mjs && node tests/solver-model.test.mjs"
+    "test": "node tests/tools.test.cjs && node tests/algorithms.test.cjs && node tests/settings.test.cjs && node tests/solver-core.test.mjs && node tests/solver-catalog.test.mjs && node tests/solver-scramble.test.mjs && node tests/solver-orientation.test.mjs && node tests/solver-worker-frame.test.mjs && node tests/solver-model.test.mjs && node tests/solver-image.test.mjs && node tests/solver-trace.test.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"

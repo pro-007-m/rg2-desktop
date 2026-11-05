@@ -1,6 +1,7 @@
 import {SOLVED,applyMove,validate,stateKey,isCross,isF2L,isOLL,isSolved,areCornersSolved} from './core.mjs';
 import {createSolverView} from './view.mjs';
 import {createScramble,restoreScramble} from './scramble.mjs';
+import {createTrace,createSegment,appendSegment,rewindTrace} from './trace.mjs';
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}};
 const save=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{}};
 const labels={CROSS:'креста',F2L:'пары F2L',LAST_LAYER:'OLL / COLL',COLL:'COLL',EPLL:'EPLL',PLL:'PLL'};
@@ -10,20 +11,28 @@ export function mount(container){
  let initial=read('rg2.cfop.input',Array.from(SOLVED)),settings=read('rg2.cfop.settings',{});
  if(!Array.isArray(initial)||initial.length!==54)initial=Array.from(SOLVED);
  let state=Uint8Array.from(initial),frameCenters=[],scrambleRecord=restoreScramble(read(SCRAMBLE_KEY,null),initial),lastRandomMoves=scrambleRecord?.moves;
+ let trace=createTrace(),segmentSerial=0;
+ const segmentChoices=new Map();
  const view=createSolverView(container,{onInputChange,onSolve:solve,onRandom:newScramble,onDemo:newScramble,onChoose:choose,onPause:pause,onResume:resume,onStepForward:()=>play(true),onStepBack:back,onRestart:restart,onMore:moreSearch,onSettingsChange:changeSettings},settings);
  settings=view.getSettings();view.setInput(initial);rebaseInput();syncScramble(initial);
  function rebaseInput(color=settings.crossColor,{resetCamera=false}={}){const frame=view.setFrameColor(color);state=Uint8Array.from(frame.state);frameCenters=[...frame.centers];if(resetCamera)view.renderer.resetCamera();return frame;}
  function previewCross(candidate){if(!candidate?.baseState)return;const frame=view.setFrameColor(candidate.crossColor,{render:false});if(settings.crossColor==='auto'){settings=view.getSettings();save('rg2.cfop.settings',settings);}state=Uint8Array.from(candidate.baseState);frameCenters=[...frame.centers];view.renderer.setState(state);view.renderer.resetCamera();}
- function timeline(current=null){view.setTimeline({executed,current,upcoming:queue.slice(current?1:0),stage});}
+ function timeline(current=null){view.setTimeline({executed,current,upcoming:queue.slice(current?1:0),stage,trace});}
+ function setTrace(next){trace=next;const retained=new Set(trace.segments.map(segment=>segment.id));for(const id of segmentChoices.keys())if(!retained.has(id))segmentChoices.delete(id);}
+ function resetTrace(){setTrace(createTrace());}
+ function observedSkip(requestStage,family='SKIP'){
+  const id=`segment-${++segmentSerial}`,segment=createSegment({id:`goal-${id}`,family,skip:true,moves:[],state:Array.from(state)},{id,stage:requestStage,startMove:executed.length,beforeState:state,afterState:state});
+  setTrace({...appendSegment(trace,segment),activeId:null});
+ }
  function cancel(){revision++;pending=null;worker?.terminate();worker=null;abort?.abort();abort=null;queue=[];running=false;view.setBusy(false);}
  function getWorker(){
   if(worker)return worker;
   worker=new Worker(new URL('./worker.mjs',import.meta.url),{type:'module'});
   worker.onmessage=({data})=>{
    if(disposed||!pending||data.id!==pending.id||data.revision!==revision||data.hash!==stateKey(state))return;
-   const {snapshot,frameColor,centers}=pending;pending=null;view.setBusy(false);
+   const {snapshot,frameColor,centers,tracePrefix,normalize:first,more:searchDepth}=pending;pending=null;view.setBusy(false);
    if(data.error){paused=true;view.showStatus('Поиск остановлен: '+data.error);return;}
-   decision={state:snapshot,executedPrefix:[...executed],historyPrefix:[...history],candidates:data.candidates,stage:data.stage,frameColor,frameCenters:centers,selected:false};
+   decision={state:snapshot,executedPrefix:[...executed],historyPrefix:[...history],tracePrefix,candidates:data.candidates,coverage:data.coverage,stage:data.stage,frameColor,frameCenters:centers,normalize:first,more:searchDepth,selected:false};
    if(data.stage==='CROSS')previewCross(data.candidates[0]);
    if(settings.pauseForChoice)paused=true;
    view.showCandidates(data.candidates,{stage:data.stage,coverage:data.coverage});
@@ -36,26 +45,26 @@ export function mount(container){
  }
  function request(nextStage,first=false){
   if(disposed||!active||running)return;
-  stage=nextStage;normalize=first;queue=[];timeline();view.setBusy(true);view.showStatus(`Сравниваю варианты ${labels[stage]}…`);
-  pending={id:++jobId,snapshot:Uint8Array.from(state),frameColor:view.getFrame().color,centers:[...frameCenters]};
+  stage=nextStage;normalize=first;queue=[];setTrace({...trace,activeId:null});timeline();view.setBusy(true);view.showStatus(`Сравниваю варианты ${labels[stage]}…`);
+  pending={id:++jobId,snapshot:Uint8Array.from(state),frameColor:view.getFrame().color,centers:[...frameCenters],tracePrefix:trace,normalize:first,more};
   getWorker().postMessage({id:pending.id,revision,state:Array.from(state),inputState:[...initial],frameCenters:[...frameCenters],stage,settings,more,normalize:first});
  }
  function clearScramble(){scrambleRecord=null;try{localStorage.removeItem(SCRAMBLE_KEY);}catch{}view.setScramble?.(null);}
  function syncScramble(input){scrambleRecord=restoreScramble(scrambleRecord,input);if(!scrambleRecord){clearScramble();return;}view.setScramble?.(scrambleRecord);save(SCRAMBLE_KEY,scrambleRecord);}
- function onInputChange(next){cancel();active=false;paused=true;initial=Array.from(next);rebaseInput();executed=[];history=[];decision=null;stage=null;branch=null;clearScramble();save('rg2.cfop.input',next);view.showValidation({errors:[]});view.showCandidates([]);view.showStatus('Раскраска изменена. Нажми «Проверить и найти решение».');timeline();}
- function restoreDecision(){if(!decision)return;view.setFrameColor(decision.frameColor,{render:false});frameCenters=[...decision.frameCenters];state=Uint8Array.from(decision.state);executed=[...decision.executedPrefix];history=[...decision.historyPrefix];queue=[];decision.selected=false;view.renderer.setState(state);}
+ function onInputChange(next){cancel();active=false;paused=true;initial=Array.from(next);rebaseInput();executed=[];history=[];resetTrace();decision=null;stage=null;branch=null;clearScramble();save('rg2.cfop.input',next);view.showValidation({errors:[]});view.showCandidates([]);view.showStatus('Раскраска изменена. Нажми «Проверить и найти решение».');timeline();}
+ function restoreDecision(){if(!decision)return;view.setFrameColor(decision.frameColor,{render:false});frameCenters=[...decision.frameCenters];state=Uint8Array.from(decision.state);executed=[...decision.executedPrefix];history=[...decision.historyPrefix];setTrace(decision.tracePrefix);queue=[];decision={...decision,selected:false};view.renderer.setState(state);}
  function moreSearch(){if(running||pending||!decision)return;restoreDecision();paused=true;more++;request(decision.stage,normalize);}
  function solve(next,config){
-  cancel();settings=config;initial=Array.from(next);rebaseInput(undefined,{resetCamera:true});executed=[];history=[];decision=null;more=0;normalize=true;branch=null;stage=null;save('rg2.cfop.input',initial);syncScramble(initial);
+  cancel();settings=config;initial=Array.from(next);rebaseInput(undefined,{resetCamera:true});executed=[];history=[];resetTrace();decision=null;more=0;normalize=true;branch=null;stage=null;save('rg2.cfop.input',initial);syncScramble(initial);
   const report=validate(initial);view.showValidation(report);timeline();
   if(!report.valid){active=false;view.showStatus('Исправь отмеченные ошибки раскраски.');return;}
   active=true;paused=Boolean(settings.pauseForChoice);
-  if(isSolved(state)){stage='DONE';active=false;view.showStatus('Куб уже собран.');view.showCandidates([],{stage});timeline();return;}
+  if(isSolved(state)){observedSkip('CROSS','CROSS');observedSkip('LAST_LAYER');observedSkip('PLL');stage='DONE';active=false;view.showStatus('Куб уже собран.');view.showCandidates([],{stage});timeline();return;}
   request('CROSS',true);
  }
  function newScramble(){
   const input=view.getInput();
-  cancel();active=false;paused=true;decision=null;executed=[];history=[];stage=null;more=0;normalize=true;branch=null;
+  cancel();active=false;paused=true;decision=null;executed=[];history=[];resetTrace();stage=null;more=0;normalize=true;branch=null;
   try{
    const record=createScramble(input,{previousMoves:lastRandomMoves});lastRandomMoves=[...record.moves];
    initial=[...record.state];view.setInput(initial);rebaseInput(undefined,{resetCamera:true});save('rg2.cfop.input',initial);
@@ -69,8 +78,10 @@ export function mount(container){
  function choose(id,{single=false}={}){
   if(disposed||running||pending||!decision)return;
   const candidate=decision.candidates.find(c=>c.id===id);if(!candidate)return;
-  revision++;view.setFrameColor(decision.frameColor,{render:false});frameCenters=[...decision.frameCenters];state=Uint8Array.from(decision.state);executed=[...decision.executedPrefix];history=[...decision.historyPrefix];stage=decision.stage;queue=Array.from(candidate.moves);previewCross(candidate);view.renderer.setState(state);decision.selected=true;active=true;paused=single;timeline();
+  revision++;restoreDecision();stage=decision.stage;queue=Array.from(candidate.moves);previewCross(candidate);view.renderer.setState(state);active=true;paused=single;
   branch=candidate.family==='EOLL'?(candidate.route==='EOLL → PLL'?'PLL':'COLL'):candidate.family==='COLL'?'EPLL':null;
+  const segment=createSegment(candidate,{id:`segment-${++segmentSerial}`,stage,startMove:executed.length,beforeState:state,afterState:candidate.state,frameColor:view.getFrame().color,branchAfter:branch});
+  setTrace(appendSegment(trace,segment));decision={...decision,selected:true,selectedSegmentId:segment.id};segmentChoices.set(segment.id,decision);timeline();
   view.showStatus(`Выбран ${candidate.title||candidate.family}. ${queue.length} ходов.`);if(queue.length)play(single);else next();
  }
  async function play(single=false){
@@ -83,7 +94,8 @@ export function mount(container){
     const token=queue[0];timeline(token);abort=new AbortController();
     await view.renderer.animateMove(token,{duration:480/Math.max(.25,Number(settings.speed)||1),signal:abort.signal});
     if(disposed||runRevision!==revision)return;
-    history.push({state:Uint8Array.from(state),token,stage,branch});state=applyMove(state,token);executed.push(token);queue.shift();view.renderer.setState(state);timeline();
+    const segment=trace.segments.find(item=>item.id===trace.activeId);
+    history.push({state:Uint8Array.from(state),token,stage,branch,segmentId:segment?.id,offsetBefore:segment?executed.length-segment.startMove:0});state=applyMove(state,token);executed.push(token);queue.shift();view.renderer.setState(state);timeline();
     if(single){paused=true;break;}
    }while(queue.length&&!paused);
   }catch(error){if(error.name!=='AbortError'){paused=true;view.showStatus('Ошибка анимации: '+error.message);}}
@@ -94,7 +106,11 @@ export function mount(container){
  function next(){
   if(!active||disposed)return;
   view.renderer.resetCamera();
-  if(isSolved(state)){stage='DONE';active=false;paused=true;queue=[];timeline();view.showStatus(`Куб собран · ${executed.length} записанных ходов. Можно вернуться к предыдущему выбору или начать сначала.`);return;}
+  setTrace({...trace,activeId:null});
+  const completed=trace.segments.at(-1);
+  if(['CROSS','F2L'].includes(completed?.family)&&isF2L(state)&&isOLL(state))observedSkip('LAST_LAYER');
+  if(completed?.family==='EOLL'&&branch==='COLL'&&areCornersSolved(state))observedSkip('COLL');
+  if(isSolved(state)){if(!['PLL','EPLL'].includes(completed?.requestStage))observedSkip(branch==='EPLL'||branch==='COLL'?'EPLL':'PLL');stage='DONE';active=false;paused=true;queue=[];timeline();view.showStatus(`Куб собран · ${executed.length} записанных ходов. Можно вернуться к предыдущему выбору или начать сначала.`);return;}
   more=0;decision=null;
   const nextStage=branch==='COLL'?(areCornersSolved(state)?'EPLL':isOLL(state)?'PLL':'COLL'):branch||(!isCross(state)?'CROSS':!isF2L(state)?'F2L':!isOLL(state)?'LAST_LAYER':'PLL');branch=null;
   paused=paused||Boolean(settings.pauseForChoice);request(nextStage);
@@ -104,12 +120,15 @@ export function mount(container){
  function back(){
   if(running||pending||!history.length)return;
   const previous=history.pop();state=Uint8Array.from(previous.state);branch=previous.branch??null;executed.pop();
-  if(decision&&history.length<decision.historyPrefix.length){decision=null;queue=[];view.showCandidates([],{stage:previous.stage});}
-  queue.unshift(previous.token);stage=previous.stage;active=true;paused=true;revision++;view.renderer.setState(state);timeline();view.showStatus('Предыдущий ход. «Ход →» выполнит его снова.');
+  const rewound=rewindTrace(trace,executed.length);setTrace(rewound.trace);queue=[...rewound.queue];stage=previous.stage;
+  const checkpoint=segmentChoices.get(rewound.segment.id);decision=checkpoint?{...checkpoint,selected:true}:null;
+  normalize=decision?.normalize??false;more=decision?.more??0;
+  view.showCandidates(decision?.candidates||[],{stage,coverage:decision?.coverage});
+  active=true;paused=true;revision++;view.renderer.setState(state);timeline();view.showStatus('Предыдущий ход. Можно продолжить этот этап или выбрать другой его вариант.');
  }
- function restart(){cancel();active=false;paused=true;decision=null;executed=[];history=[];stage=null;branch=null;more=0;normalize=true;view.setInput(initial);rebaseInput(undefined,{resetCamera:true});syncScramble(initial);view.expandEditor?.();view.showCandidates([]);timeline();view.showStatus('Возврат к исходной раскраске. Нажми «Проверить и найти решение».');}
+ function restart(){cancel();active=false;paused=true;decision=null;executed=[];history=[];resetTrace();stage=null;branch=null;more=0;normalize=true;view.setInput(initial);rebaseInput(undefined,{resetCamera:true});syncScramble(initial);view.expandEditor?.();view.showCandidates([]);timeline();view.showStatus('Возврат к исходной раскраске. Нажми «Проверить и найти решение».');}
  function changeSettings(next){const colorChanged=next.crossColor!==settings.crossColor,rankingChanged=next.rankMode!==settings.rankMode||next.prepareColl!==settings.prepareColl;settings=next;save('rg2.cfop.settings',settings);if(colorChanged){restart();const frame=view.getFrame();view.showStatus(frame.validCenters?'Цвет креста теперь снизу. Нажми «Проверить и найти решение».':'Для выбранной ориентации задай шесть разных цветов центров.');}else if(rankingChanged&&active&&!running){const target=decision?.stage||stage,frame=normalize;if(decision)restoreDecision();cancel();paused=true;request(target,frame);}}
- const api={dispose(){disposed=true;cancel();view.dispose();},debug(){return {state:Array.from(state),input:[...initial],frame:view.getFrame(),frameCenters:[...frameCenters],visual:view.renderer.getVisualState?.()??null,scramble:scrambleRecord?{...scrambleRecord,moves:[...scrambleRecord.moves],centers:[...scrambleRecord.centers],state:[...scrambleRecord.state]}:null,executed:[...executed],queue:[...queue],stage,paused,running,searching:Boolean(pending),active,candidates:decision?.candidates||[]};}};
+ const api={dispose(){disposed=true;cancel();view.dispose();},debug(){return {state:Array.from(state),input:[...initial],trace:structuredClone(trace),frame:view.getFrame(),frameCenters:[...frameCenters],visual:view.renderer.getVisualState?.()??null,scramble:scrambleRecord?{...scrambleRecord,moves:[...scrambleRecord.moves],centers:[...scrambleRecord.centers],state:[...scrambleRecord.state]}:null,executed:[...executed],queue:[...queue],stage,paused,running,searching:Boolean(pending),active,candidates:decision?.candidates||[]};}};
  // Local QA and native automation use the same public actions as the visible controls.
  container.cfopSolver=api;
  return ()=>{api.dispose();delete container.cfopSolver;};

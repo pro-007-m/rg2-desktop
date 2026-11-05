@@ -5,6 +5,26 @@
   const icon = (name, cls = '') => `<svg class="${esc(cls)}" aria-hidden="true"><use href="#i-${esc(name)}"/></svg>`;
   const read = (key, fallback) => { try { const value=localStorage.getItem(key); return value === null ? fallback : JSON.parse(value); } catch { return fallback; } };
   const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
+  const MODEL_IMAGE_KEY='rg2.model.image.v1';
+  const MODEL_IMAGE_FIELDS={
+    contrast:{label:'Контраст',min:70,max:150,step:1,default:100},
+    saturation:{label:'Насыщенность',min:0,max:180,step:1,default:100},
+    brightness:{label:'Яркость',min:70,max:130,step:1,default:100},
+    gamma:{label:'Гамма',min:.7,max:1.3,step:.01,default:1},
+    sharpness:{label:'Резкость',min:0,max:100,step:1,default:0},
+    glow:{label:'Сила свечения',min:0,max:100,step:1,default:40}
+  };
+  const MODEL_IMAGE_DEFAULTS=Object.fromEntries(Object.entries(MODEL_IMAGE_FIELDS).map(([key,field])=>[key,field.default]));
+  function normalizeModelImageSettings(value,base=MODEL_IMAGE_DEFAULTS) {
+    const input=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+    return Object.fromEntries(Object.entries(MODEL_IMAGE_FIELDS).map(([key,field])=>{
+      const candidate=Object.prototype.hasOwnProperty.call(input,key)?input[key]:base[key];
+      const valid=typeof candidate==='number'&&Number.isFinite(candidate)?Math.min(field.max,Math.max(field.min,candidate)):base[key];
+      return [key,key==='gamma'?Math.round(valid*100)/100:Math.round(valid)];
+    }));
+  }
+  let modelImageSettings=normalizeModelImageSettings(read(MODEL_IMAGE_KEY,{}));
+  write(MODEL_IMAGE_KEY,modelImageSettings);
   let catalog = null, trainerData = null, route = null, toolDisposer = null, toastTimer = null, searchTimer = null;
   let historyIndex = 0, historyMax = 0, nativeDark, searchIndex = [], bootError = null;
   let favorites = new Set(read('rg2.favorites', []));
@@ -40,6 +60,29 @@
     document.documentElement.dataset.modelNeon=modelNeon&&available?'on':'off';
     const row=$('#model-neon-setting');if(row)row.hidden=!available;
     const toggle=$('#model-neon-toggle');if(toggle){toggle.checked=modelNeon;toggle.disabled=!available;}
+    applyModelImageSettings(resolved);
+  }
+  function modelImageValue(key,value) {return key==='gamma'?value.toFixed(2).replace('.',','):value+'%';}
+  function applyModelImageSettings(resolved=document.documentElement.dataset.theme) {
+    const encoded=JSON.stringify(modelImageSettings);
+    if(document.documentElement.dataset.modelImage!==encoded)document.documentElement.dataset.modelImage=encoded;
+    for(const [key,field] of Object.entries(MODEL_IMAGE_FIELDS)) {
+      const input=$('#model-image-'+key),output=$('#model-image-'+key+'-value');
+      if(input){input.value=String(modelImageSettings[key]);input.setAttribute('aria-valuetext',modelImageValue(key,modelImageSettings[key]));}
+      if(output)output.textContent=modelImageValue(key,modelImageSettings[key]);
+    }
+    const glowAvailable=resolved==='graphite'&&modelNeon,row=$('[data-model-image-row="glow"]'),input=$('#model-image-glow');
+    if(row)row.hidden=!glowAvailable;
+    if(input)input.disabled=!glowAvailable;
+  }
+  function setModelImageSettings(partial) {
+    modelImageSettings=normalizeModelImageSettings(partial,modelImageSettings);
+    write(MODEL_IMAGE_KEY,modelImageSettings);applyModelImageSettings();
+    return {...modelImageSettings};
+  }
+  function resetModelImageSettings() {
+    modelImageSettings={...MODEL_IMAGE_DEFAULTS};modelNeon=false;
+    write(MODEL_IMAGE_KEY,modelImageSettings);write('rg2.model.neon',false);applyModelNeon();
   }
   function setModelNeon(value) {
     if(typeof value!=='boolean')return;
@@ -342,12 +385,24 @@
       return `<article class="search-result"><button class="result-open" data-open-item="${esc(entry.item.id)}"><span class="result-icon">${entry.item.icon?`<img src="${esc(asset(entry.item.icon))}" alt="" loading="lazy">`:icon('book')}</span><span class="result-copy"><span class="result-path">${esc(entry.path || 'Дополнительные материалы')}</span><strong class="result-title">${highlighter(entry.item.title,tokens)}</strong>${snippet?`<p class="result-snippet">${highlighter(snippet,tokens)}</p>`:''}</span></button><button class="card-favorite" data-favorite="${esc(entry.item.id)}" aria-pressed="${favorites.has(entry.item.id)}" title="В избранное" aria-label="В избранное: ${esc(entry.item.title)}">${icon('star')}</button></article>`;
     }).join('')}</div>`:emptyState(q?'Ничего не найдено':'Что будем искать?',q?'Попробуйте другое название, формулу или короткую фразу.':'Введите название головоломки, алгоритм или фразу в строке поиска.'));
   }
+  function modelImageControls() {
+    return `<section class="model-image-settings" aria-labelledby="model-image-heading"><div class="model-image-heading"><h3 id="model-image-heading">Изображение 3D-куба</h3><button type="button" class="action-button" id="model-image-reset">Как в развёртке</button></div><div class="model-image-layout"><div><div class="model-image-preview" id="model-image-preview"></div><p class="model-image-preview-note">Предпросмотр · перетащи куб для поворота</p></div><div class="model-image-grid">${Object.entries(MODEL_IMAGE_FIELDS).map(([key,field])=>`<div class="model-image-control" data-model-image-row="${key}" ${key==='glow'?'hidden':''}><div class="model-image-label"><label for="model-image-${key}">${field.label}</label><output id="model-image-${key}-value" for="model-image-${key}">${modelImageValue(key,modelImageSettings[key])}</output></div><input type="range" id="model-image-${key}" data-model-image-key="${key}" data-model-image="${key}" min="${field.min}" max="${field.max}" step="${field.step}" value="${modelImageSettings[key]}" aria-valuetext="${modelImageValue(key,modelImageSettings[key])}"></div>`).join('')}</div></div></section>`;
+  }
+  function mountModelImagePreview() {
+    const host=$('#model-image-preview');let cancelled=false,renderer=null;
+    toolDisposer=()=>{cancelled=true;renderer?.dispose();};
+    Promise.all([import('./solver/renderer.mjs'),import('./solver/core.mjs')]).then(([model,core])=>{
+      if(cancelled||!host.isConnected)return;
+      renderer=model.createRenderer(host);renderer.setEditable(false);
+      renderer.setState(core.applyAlg(core.SOLVED,"R U R' F2 D L2 B' U2"));
+    }).catch(()=>{if(!cancelled&&host.isConnected)host.textContent='Предпросмотр 3D недоступен.';});
+  }
   function renderSettings() {
     setBreadcrumbs([{title:'Настройки'}]);
     $('#content').innerHTML=`<div class="settings-layout"><div class="page-heading"><div class="eyebrow">Рабочее пространство</div><h1 class="page-title">Настройки</h1></div><section class="settings-block"><h2>Оформление</h2><p>Выберите свой стиль или доверьте выбор системе.</p><div class="theme-options">${[
       ['system','Как в системе','По умолчанию'],['atelier','Atelier','Светлая · тёплая и спокойная'],['graphite','Graphite','Тёмная · графит и синий']
-    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div><label class="settings-row model-neon-setting" id="model-neon-setting" for="model-neon-toggle" hidden><span><strong id="model-neon-label">Неоновое свечение деталей</strong><small id="model-neon-help">Цветные элементы 3D-куба светятся в тёмной теме.</small></span><input type="checkbox" id="model-neon-toggle" aria-labelledby="model-neon-label" aria-describedby="model-neon-help"></label></section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p>RG2 · Desktop 1.3.0</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section></div>`;
-    applyTheme();
+    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div><label class="settings-row model-neon-setting" id="model-neon-setting" for="model-neon-toggle" hidden><span><strong id="model-neon-label">Неоновое свечение деталей</strong><small id="model-neon-help">Цветные элементы 3D-куба светятся в тёмной теме.</small></span><input type="checkbox" id="model-neon-toggle" aria-labelledby="model-neon-label" aria-describedby="model-neon-help"></label>${modelImageControls()}</section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p>RG2 · Desktop 1.4.0</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section></div>`;
+    applyTheme();mountModelImagePreview();
   }
   function renderTools() {
     setBreadcrumbs([{title:'Тренажеры'}]);
@@ -418,6 +473,7 @@
   }
   document.addEventListener('click',event=>{
     const button=event.target.closest('button,a,label');if(!button)return;
+    if(button.id==='model-image-reset'){resetModelImageSettings();return;}
     if(button.matches('[data-home]')){event.preventDefault();navigate(defaultRoute());return;}
     if(button.dataset.route){event.preventDefault();try{navigate(JSON.parse(button.dataset.route));}catch{}return;}
     if(button.dataset.openItem){event.preventDefault();openItem(button.dataset.openItem);return;}
@@ -434,6 +490,7 @@
   });
   document.addEventListener('keydown',event=>{if(event.key==='Enter' && event.target.matches('img[data-zoom]'))event.target.click();});
   document.addEventListener('change',event=>{if(event.target.matches('input[name="theme"]'))setTheme(event.target.value);if(event.target.id==='notation-group')navigate({type:'notation',id:event.target.value});if(event.target.id==='model-neon-toggle')setModelNeon(event.target.checked);});
+  document.addEventListener('input',event=>{const key=event.target.dataset.modelImageKey;if(Object.prototype.hasOwnProperty.call(MODEL_IMAGE_FIELDS,key))setModelImageSettings({[key]:Number(event.target.value)});});
   $('#settings-button').addEventListener('click',()=>navigate({type:'settings'}));
   $('#history-back').addEventListener('click',()=>{if(historyIndex>0)history.back();});
   $('#history-forward').addEventListener('click',()=>{if(historyIndex<historyMax)history.forward();});
@@ -460,7 +517,7 @@
   window.addEventListener('popstate',event=>{
     if(!catalog)return;route=normalizeRoute(event.state?.route || routeFromHash() || defaultRoute());historyIndex=event.state?.index ?? 0;write('rg2.lastRoute',route);render();$('#workspace').scrollTop=0;
   });
-  window.RG2App={ready,navigate,openItem,setTheme,setModelNeon,toast,get catalog(){return catalog;},get trainerData(){return trainerData;},get state(){return {route,themePreference:preference,effectiveTheme:document.documentElement.dataset.theme,modelNeonPreference:modelNeon,modelNeonActive:document.documentElement.dataset.modelNeon==='on',favorites:[...favorites],historyIndex,historyMax,bootError};},get items(){return items;},get phases(){return phases;},sanitizeArticle,handleRG2Link};
+  window.RG2App={ready,navigate,openItem,setTheme,setModelNeon,setModelImageSettings,toast,get catalog(){return catalog;},get trainerData(){return trainerData;},get state(){return {route,themePreference:preference,effectiveTheme:document.documentElement.dataset.theme,modelNeonPreference:modelNeon,modelNeonActive:document.documentElement.dataset.modelNeon==='on',modelImageSettings:{...modelImageSettings},favorites:[...favorites],historyIndex,historyMax,bootError};},get items(){return items;},get phases(){return phases;},sanitizeArticle,handleRG2Link};
   async function initialize() {
     try {
       const [catalogResult,trainerResult]=await Promise.allSettled([fetch('catalog.json').then(response=>{if(!response.ok)throw new Error('catalog '+response.status);return response.json();}),fetch('trainer-data.json').then(response=>response.ok?response.json():null)]);

@@ -1,6 +1,7 @@
 import { createRenderer,PALETTE } from './renderer.mjs';
 import { SOLVED,FACE_NAMES,applyAlg } from './core.mjs';
 import { orientForCross,determineCrossColor } from './orientation.mjs';
+import { stageCopy } from './trace.mjs';
 const NAMES=['Белый','Красный','Зелёный','Жёлтый','Оранжевый','Синий'];
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const movesText=c=>Array.isArray(c.moves)?c.moves.join(' '):String(c.moves||c.alg||'');
@@ -16,11 +17,12 @@ export function createSolverView(container,callbacks={},settings={}){
   <details class="cfop-editor" open><summary>Раскраска куба <span>54 наклейки · U R F D L B</span></summary><div class="cfop-editor-content"><div><div class="cfop-palette">${NAMES.map((n,i)=>`<button type="button" data-color="${i}" aria-label="${n}" style="--paint:${PALETTE[i]}"><i></i><span>${n}</span><b data-color-count="${i}">0/9</b></button>`).join('')}</div><p class="cfop-input-help">Выбери цвет и нажимай на наклейки развёртки или 3D-модели. Каждая грань показана снаружи. Центры задают цветовую схему.</p><div class="cfop-input-actions"><button type="button" data-action="clear">Очистить</button><button type="button" data-action="solved">Собранный куб</button><button type="button" data-action="demo">Новый скрамбл</button></div><button type="button" class="cfop-solve" data-action="solve">Проверить и найти решение</button></div><div class="cfop-net">${FACE_NAMES.map((face,f)=>`<div class="cfop-face cfop-face-${face}"><div class="cfop-face-label">${face}</div><div class="cfop-face-grid">${Array.from({length:9},(_,i)=>`<button type="button" data-sticker="${f*9+i}" class="${i===4?'is-center':''}" aria-label="${face}${i+1}">${i===4?face:''}</button>`).join('')}</div></div>`).join('')}</div></div></details>
   <p class="cfop-footnote">Рейтинг оценивает удобство, а не измеренное время. Для поиска CROSS/F2L показывается достигнутая глубина; остальные варианты остаются доступны.</p></section>`;
   const root=container.querySelector('.cfop-tool'),$=s=>root.querySelector(s);
-  let input=Array.from(SOLVED),selectedColor=0,candidates=[],recommendedId=null,visibleCount=12,disposed=false,allMoves=[],scrambleMoves=[],busy=false,frameColor=0,frame=null,liveMoves=[],liveDisplayToInput=[];
+  let input=Array.from(SOLVED),selectedColor=0,candidates=[],recommendedId=null,visibleCount=12,disposed=false,allMoves=[],scrambleMoves=[],busy=false,frameColor=0,frame=null,liveMoves=[],liveDisplayToInput=[],timelineTrace={segments:[],activeId:null};
   const indexLabels=Uint8Array.from({length:54},(_,index)=>index);
   const config={crossColor:0,autoCrossColor:0,rankMode:'execution',pauseForChoice:false,prepareColl:false,speed:1,...settings};
   frameColor=determineCrossColor(input,config.crossColor,config.autoCrossColor);
   $('.cfop-timeline-head').insertAdjacentHTML('afterend','<div class="cfop-frame" aria-label="Ориентация решения"><div><strong>Перед решением</strong><code data-setup-moves></code></div><p data-solution-frame></p><button type="button" data-action="copy-setup">Копировать поворот</button></div>');
+  const copyActions=document.createElement('div');copyActions.className='cfop-timeline-actions';$('[data-action="copy"]').before(copyActions);copyActions.append($('[data-action="copy"]'));copyActions.insertAdjacentHTML('beforeend','<button type="button" data-action="copy-stages" disabled>Копировать по этапам</button>');
   let renderer;
   try{renderer=createRenderer($('.cfop-cube'),{onPaint:index=>paint(index,true)});}catch(error){$('.cfop-cube').innerHTML=`<p class="cfop-render-error">Не удалось включить 3D. Проверь поддержку WebGL2.<br>${esc(error.message)}</p>`;renderer={setState(){},animateMove(){return Promise.reject(new Error('3D недоступно: '+error.message));},setEditable(){},resetCamera(){},dispose(){}};}
   for(const node of root.querySelectorAll('[data-setting]')){const value=config[node.dataset.setting];if(node.type==='checkbox')node.checked=Boolean(value);else node.value=String(value);}
@@ -62,12 +64,24 @@ export function createSolverView(container,callbacks={},settings={}){
   }
   function drawCandidates(){const recommended=candidates.find(c=>c.id===recommendedId)||candidates[0];$('.cfop-recommendation').innerHTML=recommended?card(recommended,true):'<div class="cfop-choice-empty">Поиск ещё не дал вариантов.</div>';const rest=candidates.filter(c=>c!==recommended);$('.cfop-alternatives').innerHTML=rest.slice(0,visibleCount).map(c=>card(c)).join('');$('[data-count]').textContent=candidates.length?String(candidates.length):'';$('[data-action="show-more"]').hidden=visibleCount>=rest.length;root.querySelectorAll('[data-choose]').forEach(b=>b.disabled=busy);}
   function showCandidates(next,{stage,coverage={},recommendedId:id}={}){candidates=Array.from(next||[]);recommendedId=id||candidates[0]?.id;visibleCount=12;$('.cfop-choice-title h2').textContent=stageName(stage);$('.cfop-coverage').textContent=coverage.message||[coverage.completedDepth!=null?'Глубина '+coverage.completedDepth:null,coverage.visitedNodes?'Проверено '+Number(coverage.visitedNodes).toLocaleString('ru')+' узлов':null,coverage.exhaustedDeclaredDomain?'Поиск в указанной области завершён':coverage.incomplete?'Лучшие найденные варианты; поиск можно продолжить':null].filter(Boolean).join(' · ');$('[data-action="search-more"]').hidden=!['CROSS','F2L'].includes(stage);drawCandidates();}
-  function setTimeline({executed=[],current=null,upcoming=[],stage}={}){
+  function setTimeline({executed=[],current=null,upcoming=[],stage,trace}={}){
     liveMoves=[...executed];updateLiveMapping();
+    timelineTrace=trace||{segments:[],activeId:null};
     allMoves=[...executed,...(current?[current]:[]),...upcoming];$('[data-stage]').textContent=stageName(stage);$('[data-action="copy"]').disabled=!allMoves.length;
-    $('.cfop-moves').innerHTML=allMoves.length?[...executed.map(m=>`<span class="is-done">${esc(m)}</span>`),...(current?[`<strong class="is-current">${esc(current)}</strong>`]:[]),...upcoming.map(m=>`<span>${esc(m)}</span>`)].join(' '):'<span class="cfop-moves-empty">Здесь появятся ходы решения</span>';
+    $('[data-action="copy-stages"]').disabled=!timelineTrace.segments.length;
+    $('.cfop-moves').innerHTML=timelineTrace.segments.length?timelineTrace.segments.map(segment=>{
+      const active=segment.id===timelineTrace.activeId,complete=executed.length>=segment.endMove;
+      const roleAt=index=>segment.parts?.find(part=>index>=part.from&&index<part.to)?.role||'algorithm';
+      const tokens=segment.moves.map((token,index)=>{
+        const offset=segment.startMove+index,role=roleAt(index),partLabel=segment.parts?.find(part=>part.from===index&&part.role!=='algorithm')?.label;
+        const selected=Boolean(current)&&offset===executed.length,tag=selected?'strong':'span';
+        return `${partLabel?`<small class="cfop-trace-part-label" data-part-label="${esc(role)}">${esc(partLabel)}</small>`:''}<${tag} class="cfop-trace-token ${offset<executed.length?'is-done':selected?'is-current':'is-upcoming'}" data-move-index="${offset}" data-part="${esc(role)}"${selected?' aria-current="step"':''}>${esc(token)}</${tag}>`;
+      }).join(' ');
+      const markers=(segment.pairMarkers||[]).map(marker=>`<span class="cfop-trace-pair ${executed.length>=marker.atMove?'is-complete':'is-pending'}" data-pair-slot="${esc(marker.slot)}">${esc(marker.label)}</span>`).join('');
+      return `<span class="cfop-trace-segment ${active?'is-active':''} ${complete?'is-complete':''}" data-segment="${esc(segment.id)}" data-family="${esc(segment.family)}" data-display-family="${esc(segment.displayFamily)}"${active?' aria-current="step"':''}><span class="cfop-trace-bracket" aria-hidden="true">[</span><span class="cfop-trace-label">${esc(segment.label)}</span><span class="cfop-trace-body">${tokens||'<small class="cfop-trace-skip">Ходы не нужны</small>'}</span>${markers?`<span class="cfop-trace-pairs">${markers}</span>`:''}<span class="cfop-trace-bracket" aria-hidden="true">]</span></span>`;
+    }).join(' '):`<span class="cfop-moves-empty">${stage==='DONE'?'Куб уже собран · ходы не нужны':'Здесь появятся ходы решения по этапам'}</span>`;
     // Only the notation area scrolls; animation never scrolls the workspace.
-    const box=$('.cfop-moves'),active=$('.is-current');
+    const box=$('.cfop-moves'),active=$('.is-current')||$(`[data-move-index="${executed.length}"]`)||$('.cfop-trace-segment.is-active');
     if(active){const bounds=box.getBoundingClientRect(),move=active.getBoundingClientRect();if(move.top<bounds.top+8)box.scrollTop+=move.top-bounds.top-8;else if(move.bottom>bounds.bottom-8)box.scrollTop+=move.bottom-bounds.bottom+8;}
     else if(!allMoves.length)box.scrollTop=0;
   }
@@ -83,6 +97,7 @@ export function createSolverView(container,callbacks={},settings={}){
     else if(action==='show-more'){visibleCount+=24;drawCandidates();}
     else if(action==='copy-scramble')copy(scrambleMoves.join(' '),'Скрамбл скопирован');
     else if(action==='copy-setup')copy(frame.moves.join(' '),'Поворот перед решением скопирован');
+    else if(action==='copy-stages')copy(stageCopy(timelineTrace,{setupMoves:frame.moves}),'Решение по этапам скопировано');
     else if(action==='copy')copy([...frame.moves,...allMoves].join(' '),'Поворот и ходы решения скопированы');
   }
   async function copy(value,label){

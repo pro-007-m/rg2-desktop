@@ -25,19 +25,34 @@
 .cfop-scramble code{font:17px/1.6 Consolas,monospace;display:block;overflow:auto;min-height:0;overflow-wrap:anywhere}
 .cfop-scramble p{font-size:12px;color:var(--muted);margin:0;line-height:1.5}
 .cfop-timeline{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden;margin-bottom:16px}
-.cfop-timeline-head{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.cfop-timeline-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
 .cfop-timeline-head button{padding:3px 8px;border:0;color:var(--muted);font-size:12px}
+.cfop-timeline-actions{display:flex;flex-wrap:wrap;gap:6px}
 .cfop-frame{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--soft);font-size:12px;color:var(--muted)}
 .cfop-frame>div{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .cfop-frame strong{font-weight:600;color:var(--ink)}
 .cfop-frame code{font:15px Consolas,monospace;color:var(--ink)}
 .cfop-frame p{grid-column:1;margin:2px 0 0;line-height:1.5;overflow-wrap:anywhere}
 .cfop-frame button{grid-column:2;grid-row:1/3;align-self:center;font-size:12px;padding:6px 9px}
-.cfop-moves{font:19px/1.8 Consolas,monospace;height:90px;min-height:90px;max-height:90px;overflow:auto;padding:12px 16px;word-break:normal;position:relative;scroll-behavior:auto;overflow-anchor:none}
-.cfop-moves>span,.cfop-moves>strong{display:inline-block;padding:0 4px;border-radius:4px}
+.cfop-moves{font:19px/1.8 Consolas,monospace;height:132px;min-height:132px;max-height:132px;overflow:auto;padding:12px 16px;word-break:normal;position:relative;scroll-behavior:auto;overflow-anchor:none}
+.cfop-moves>.cfop-moves-empty{display:inline-block;padding:0 4px;border-radius:4px}
 .cfop-moves .is-done{color:var(--muted);opacity:.75}
 .cfop-moves .is-current{color:var(--accent-contrast);background:var(--accent)}
 .cfop-moves-empty{font:13px 'Segoe UI',sans-serif;color:var(--muted)}
+.cfop-trace-segment{--trace-color:var(--accent);display:inline-block;vertical-align:top;max-width:100%;border:1px solid color-mix(in srgb,var(--trace-color) 28%,var(--line));border-radius:7px;padding:5px 8px;margin:0 5px 7px 0;background:color-mix(in srgb,var(--trace-color) 5%,var(--bg));line-height:1.65;overflow-wrap:anywhere}
+.cfop-trace-segment[data-display-family=CROSS]{--trace-color:#2f805b}.cfop-trace-segment[data-display-family=F2L]{--trace-color:#376faa}.cfop-trace-segment:is([data-display-family=COLL],[data-display-family=EOLL],[data-display-family=OLL]){--trace-color:#8061a9}.cfop-trace-segment:is([data-display-family=PLL],[data-display-family=EPLL]){--trace-color:#9a6a25}
+[data-theme=graphite] .cfop-trace-segment[data-display-family=CROSS]{--trace-color:#7ccda0}[data-theme=graphite] .cfop-trace-segment[data-display-family=F2L]{--trace-color:#78b2f0}[data-theme=graphite] .cfop-trace-segment:is([data-display-family=COLL],[data-display-family=EOLL],[data-display-family=OLL]){--trace-color:#baa1ef}[data-theme=graphite] .cfop-trace-segment:is([data-display-family=PLL],[data-display-family=EPLL]){--trace-color:#e5bc70}
+.cfop-trace-segment.is-active{border-color:var(--accent);background:var(--soft)}
+.cfop-trace-label{font:600 13px/1.5 'Segoe UI',sans-serif;color:var(--trace-color);display:inline-block;margin:0 9px 0 4px}
+.cfop-trace-segment.is-active>.cfop-trace-label{color:var(--accent)}
+.cfop-trace-bracket{color:var(--trace-color);font-size:20px}
+.cfop-trace-token{display:inline-block;padding:0 4px;border-radius:4px;font-weight:500}
+.cfop-trace-part-label,.cfop-trace-skip{font:12px/1.5 'Segoe UI',sans-serif;color:var(--muted);margin:0 5px}
+.cfop-trace-part-label{border-left:1px solid var(--line);padding-left:8px}
+.cfop-trace-pairs{display:inline-flex;gap:5px;flex-wrap:wrap;margin:2px 5px}
+.cfop-trace-pair{font:12px/1.5 'Segoe UI',sans-serif;color:var(--muted);padding:2px 5px;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.cfop-trace-pair.is-complete{color:var(--accent)}
+.cfop-trace-pair.is-pending{opacity:.7}
 .cfop-workbench{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:stretch;height:clamp(560px,60vh,640px)}
 .cfop-cube-panel{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,var(--soft),var(--surface) 75%);position:static;height:100%;display:flex;flex-direction:column;min-height:0;min-width:0}
 .cfop-cube{height:auto;min-width:0;min-height:0;position:relative;flex:1}

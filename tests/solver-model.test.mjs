@@ -16,6 +16,24 @@ for(const facelet of FACELETS){
   assert.ok(bounds.max.y<=CELL_PITCH/2 && bounds.min.y>=-CELL_PITCH/2);
   assert.ok(bounds.max.z>CAP_FRONT && bounds.max.z<=CAP_FRONT+CAP_CROWN+.0001,'The colored cap has a shallow convex crown');
   assert.ok(bounds.max.z-bounds.min.z>.15,'Caps have actual colored thickness, not flat stickers');
+  // Weld by position: smooth normals must not hide cracks between front and bevel.
+  const welded=new Map(),ids=[],edges=new Map();let volume=0;
+  for(let i=0;i<positions.count;i++){
+    const key=[positions.getX(i),positions.getY(i),positions.getZ(i)].map(v=>Math.round(v*1e6)).join(',');
+    if(!welded.has(key))welded.set(key,welded.size);ids.push(welded.get(key));
+  }
+  for(let i=0;i<geometry.index.count;i+=3){
+    const indices=[0,1,2].map(k=>geometry.index.getX(i+k)),triangle=indices.map(j=>ids[j]);
+    assert.equal(new Set(triangle).size,3,'No degenerate triangles');
+    for(let k=0;k<3;k++){
+      const a=triangle[k],b=triangle[(k+1)%3],key=a<b?a+','+b:b+','+a,edge=edges.get(key)||{count:0,winding:0};
+      edge.count++;edge.winding+=a<b?1:-1;edges.set(key,edge);
+    }
+    const [a,b,c]=indices.map(j=>[positions.getX(j),positions.getY(j),positions.getZ(j)]);
+    volume+=(a[0]*(b[1]*c[2]-b[2]*c[1])+a[1]*(b[2]*c[0]-b[0]*c[2])+a[2]*(b[0]*c[1]-b[1]*c[0]))/6;
+  }
+  assert.ok([...edges.values()].every(edge=>edge.count===2&&edge.winding===0),'Every edge belongs to two oppositely oriented triangles: cap is fully closed');
+  assert.ok(volume>.15,'Caps enclose actual solid volume');
   for(let i=0;i<positions.count;i++){
     assert.ok([positions.getX(i),positions.getY(i),positions.getZ(i),normals.getX(i),normals.getY(i),normals.getZ(i)].every(Number.isFinite));
     const length=Math.hypot(normals.getX(i),normals.getY(i),normals.getZ(i));assert.ok(length>.99&&length<1.01,'Smooth, nondegenerate cap normals');

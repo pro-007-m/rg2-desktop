@@ -13,6 +13,7 @@
   if (!focusedAlgorithms || typeof focusedAlgorithms !== 'object' || Array.isArray(focusedAlgorithms)) focusedAlgorithms = {};
   let preference; try { preference=localStorage.getItem('rg2.theme') || 'system'; } catch { preference='system'; }
   if (!['system','atelier','graphite'].includes(preference)) preference='system';
+  let modelNeon=read('rg2.model.neon',false)===true;
   const systemTheme = matchMedia('(prefers-color-scheme: dark)');
   const phases = new Map(), items = new Map(), parents = new Map(), categories = [], extraItems = [];
   let resolveReady; const ready = new Promise(resolve => {resolveReady=resolve;});
@@ -34,10 +35,21 @@
     for(const tool of toolDefinitions)if(!ordered.some(item=>item.id===tool.id))ordered.push(tool);
     return ordered;
   }
+  function applyModelNeon(resolved=document.documentElement.dataset.theme) {
+    const available=resolved==='graphite';
+    document.documentElement.dataset.modelNeon=modelNeon&&available?'on':'off';
+    const row=$('#model-neon-setting');if(row)row.hidden=!available;
+    const toggle=$('#model-neon-toggle');if(toggle){toggle.checked=modelNeon;toggle.disabled=!available;}
+  }
+  function setModelNeon(value) {
+    if(typeof value!=='boolean')return;
+    modelNeon=value;write('rg2.model.neon',value);applyModelNeon();
+  }
   function applyTheme() {
     const dark = nativeDark === undefined ? systemTheme.matches : nativeDark;
     const resolved = preference === 'system' ? (dark ? 'graphite' : 'atelier') : preference;
     document.documentElement.dataset.theme = resolved;
+    applyModelNeon(resolved);
     document.documentElement.style.colorScheme = resolved === 'graphite' ? 'dark' : 'light';
     try { window.chrome?.webview?.postMessage({type:'theme', preference, resolved}); } catch {}
     document.querySelectorAll('input[name="theme"]').forEach(input => {input.checked=input.value===preference;});
@@ -334,7 +346,7 @@
     setBreadcrumbs([{title:'Настройки'}]);
     $('#content').innerHTML=`<div class="settings-layout"><div class="page-heading"><div class="eyebrow">Рабочее пространство</div><h1 class="page-title">Настройки</h1></div><section class="settings-block"><h2>Оформление</h2><p>Выберите свой стиль или доверьте выбор системе.</p><div class="theme-options">${[
       ['system','Как в системе','По умолчанию'],['atelier','Atelier','Светлая · тёплая и спокойная'],['graphite','Graphite','Тёмная · графит и синий']
-    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div></section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p>RG2 · Desktop 1.2.0</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section></div>`;
+    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div><label class="settings-row model-neon-setting" id="model-neon-setting" for="model-neon-toggle" hidden><span><strong id="model-neon-label">Неоновое свечение деталей</strong><small id="model-neon-help">Цветные элементы 3D-куба светятся в тёмной теме.</small></span><input type="checkbox" id="model-neon-toggle" aria-labelledby="model-neon-label" aria-describedby="model-neon-help"></label></section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p>RG2 · Desktop 1.3.0</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section></div>`;
     applyTheme();
   }
   function renderTools() {
@@ -421,7 +433,7 @@
     $('#zoom-image').src=image.src;$('#zoom-image').alt=image.alt;$('#image-dialog').showModal();
   });
   document.addEventListener('keydown',event=>{if(event.key==='Enter' && event.target.matches('img[data-zoom]'))event.target.click();});
-  document.addEventListener('change',event=>{if(event.target.matches('input[name="theme"]'))setTheme(event.target.value);if(event.target.id==='notation-group')navigate({type:'notation',id:event.target.value});});
+  document.addEventListener('change',event=>{if(event.target.matches('input[name="theme"]'))setTheme(event.target.value);if(event.target.id==='notation-group')navigate({type:'notation',id:event.target.value});if(event.target.id==='model-neon-toggle')setModelNeon(event.target.checked);});
   $('#settings-button').addEventListener('click',()=>navigate({type:'settings'}));
   $('#history-back').addEventListener('click',()=>{if(historyIndex>0)history.back();});
   $('#history-forward').addEventListener('click',()=>{if(historyIndex<historyMax)history.forward();});
@@ -448,7 +460,7 @@
   window.addEventListener('popstate',event=>{
     if(!catalog)return;route=normalizeRoute(event.state?.route || routeFromHash() || defaultRoute());historyIndex=event.state?.index ?? 0;write('rg2.lastRoute',route);render();$('#workspace').scrollTop=0;
   });
-  window.RG2App={ready,navigate,openItem,setTheme,toast,get catalog(){return catalog;},get trainerData(){return trainerData;},get state(){return {route,themePreference:preference,effectiveTheme:document.documentElement.dataset.theme,favorites:[...favorites],historyIndex,historyMax,bootError};},get items(){return items;},get phases(){return phases;},sanitizeArticle,handleRG2Link};
+  window.RG2App={ready,navigate,openItem,setTheme,setModelNeon,toast,get catalog(){return catalog;},get trainerData(){return trainerData;},get state(){return {route,themePreference:preference,effectiveTheme:document.documentElement.dataset.theme,modelNeonPreference:modelNeon,modelNeonActive:document.documentElement.dataset.modelNeon==='on',favorites:[...favorites],historyIndex,historyMax,bootError};},get items(){return items;},get phases(){return phases;},sanitizeArticle,handleRG2Link};
   async function initialize() {
     try {
       const [catalogResult,trainerResult]=await Promise.allSettled([fetch('catalog.json').then(response=>{if(!response.ok)throw new Error('catalog '+response.status);return response.json();}),fetch('trainer-data.json').then(response=>response.ok?response.json():null)]);

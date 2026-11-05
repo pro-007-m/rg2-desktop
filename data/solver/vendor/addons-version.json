@@ -1,0 +1,71 @@
+{
+  "package": "three",
+  "version": "0.187.0",
+  "integrity": "sha512-Qiu7R+Cmh8CstZsY1uJOSWnVlfo7ZtNLV7mF8Jltk3LB3AtDu9cRZlcnRKkAk8Y4z6KKw35z7Y7Urd7jWY8etA==",
+  "source": "https://registry.npmjs.org/three/-/three-0.187.0.tgz",
+  "verifiedArchiveIntegrity": "sha512-Qiu7R+Cmh8CstZsY1uJOSWnVlfo7ZtNLV7mF8Jltk3LB3AtDu9cRZlcnRKkAk8Y4z6KKw35z7Y7Urd7jWY8etA==",
+  "entryPoints": [
+    "addons/postprocessing/EffectComposer.js",
+    "addons/postprocessing/RenderPass.js",
+    "addons/postprocessing/UnrealBloomPass.js",
+    "addons/postprocessing/OutputPass.js",
+    "addons/environments/RoomEnvironment.js",
+    "addons/utils/BufferGeometryUtils.js",
+    "addons/geometries/RoundedBoxGeometry.js"
+  ],
+  "files": {
+    "environments/RoomEnvironment.js": {
+      "bytes": 4976,
+      "sha256": "dbc78a606724508ea6ddfb376b63689761cad07c49d879d0fa9c2ddc45c27dbc"
+    },
+    "geometries/RoundedBoxGeometry.js": {
+      "bytes": 6486,
+      "sha256": "2f7e2e42ece769a23b6c1b26987cd53e851854dd7fb3035948284b9226844971"
+    },
+    "postprocessing/EffectComposer.js": {
+      "bytes": 8517,
+      "sha256": "af78417adddaa482b742ddcfdf551ca0b35d77d58493f2e96439fdc219905ef0"
+    },
+    "postprocessing/MaskPass.js": {
+      "bytes": 4694,
+      "sha256": "7cd08eee9d5d6f5578beaddbdcbe9c384f6873810af27f22ab7db3ceeb127aa3"
+    },
+    "postprocessing/OutputPass.js": {
+      "bytes": 4200,
+      "sha256": "e31bb5e6843c43e99113198824c2242b95abe2ed9047e725691fd6453fc8321f"
+    },
+    "postprocessing/Pass.js": {
+      "bytes": 4234,
+      "sha256": "ac015c53e4a491b4f071535d003e6208ec56e00cfbb74942d93556dd53c45673"
+    },
+    "postprocessing/RenderPass.js": {
+      "bytes": 4296,
+      "sha256": "11d4309065ed205241291a6e1e3f6d54acd11ee16a753313a2b4b33a5ce4b189"
+    },
+    "postprocessing/ShaderPass.js": {
+      "bytes": 3244,
+      "sha256": "1a07592b97c68fec70b9ece4ee32522878c9e71e8364c10f359480b8cd676ef2"
+    },
+    "postprocessing/UnrealBloomPass.js": {
+      "bytes": 15413,
+      "sha256": "246ded822cd0fc5643b5bdc53e9542deeae168d2550c010891264920abb4bca2"
+    },
+    "shaders/CopyShader.js": {
+      "bytes": 729,
+      "sha256": "a33057d5ac91c43304c186ac0e8816e62bb2ed471d3a00ff3018dfd5c0389718"
+    },
+    "shaders/LuminosityHighPassShader.js": {
+      "bytes": 1307,
+      "sha256": "123c9d8c4155fa296822eb3325574e82a6c5f4cb30eed065c6cc073ba7ca3bbe"
+    },
+    "shaders/OutputShader.js": {
+      "bytes": 1876,
+      "sha256": "353479f77a8d7e2629d49ccac9fc2f5dbfdda5442e0adf867b00377a2fcb0cb2"
+    },
+    "utils/BufferGeometryUtils.js": {
+      "bytes": 39169,
+      "sha256": "dba1b5dccc418f494eae6f1e731ec82734b2eaf3321b1db04c4321b16c1ea549"
+    }
+  },
+  "importRewrite": "Bare three imports rewritten to relative vendor/three.module.js; module/core use production fallback."
+}

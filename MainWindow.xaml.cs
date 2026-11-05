@@ -14,10 +14,18 @@ namespace RG2.Desktop;
 public partial class MainWindow : Window
 {
     private const string LocalHost = "rg2.local";
-    private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RG2 Desktop", "appearance.json");
+    private static readonly string DataDirectory = ResolveDataDirectory();
+    private static readonly string SettingsPath = Path.Combine(DataDirectory, "appearance.json");
     private string themePreference = "system";
     private bool disposed;
+
+    private static string ResolveDataDirectory()
+    {
+        string? isolatedDirectory = Environment.GetEnvironmentVariable("RG2_DESKTOP_DATA_DIRECTORY");
+        return !string.IsNullOrWhiteSpace(isolatedDirectory) && Path.IsPathFullyQualified(isolatedDirectory)
+            ? Path.GetFullPath(isolatedDirectory)
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RG2 Desktop");
+    }
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
@@ -48,9 +56,7 @@ public partial class MainWindow : Window
             if (!File.Exists(Path.Combine(dataDirectory, "index.html")))
                 throw new FileNotFoundException("Не найден файл data/index.html рядом с приложением.");
 
-            string profileDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "RG2 Desktop", "WebView2");
+            string profileDirectory = Path.Combine(DataDirectory, "WebView2");
             CoreWebView2Environment environment = await CoreWebView2Environment.CreateAsync(
                 userDataFolder: profileDirectory);
             await Browser.EnsureCoreWebView2Async(environment);

@@ -1,5 +1,6 @@
 import { createRenderer,PALETTE } from './renderer.mjs';
-import { SOLVED,FACE_NAMES } from './core.mjs';
+import { SOLVED,FACE_NAMES,applyAlg } from './core.mjs';
+import { orientForCross,determineCrossColor } from './orientation.mjs';
 const NAMES=['Белый','Красный','Зелёный','Жёлтый','Оранжевый','Синий'];
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const movesText=c=>Array.isArray(c.moves)?c.moves.join(' '):String(c.moves||c.alg||'');
@@ -15,22 +16,34 @@ export function createSolverView(container,callbacks={},settings={}){
   <details class="cfop-editor" open><summary>Раскраска куба <span>54 наклейки · U R F D L B</span></summary><div class="cfop-editor-content"><div><div class="cfop-palette">${NAMES.map((n,i)=>`<button type="button" data-color="${i}" aria-label="${n}" style="--paint:${PALETTE[i]}"><i></i><span>${n}</span><b data-color-count="${i}">0/9</b></button>`).join('')}</div><p class="cfop-input-help">Выбери цвет и нажимай на наклейки развёртки или 3D-модели. Каждая грань показана снаружи. Центры задают цветовую схему.</p><div class="cfop-input-actions"><button type="button" data-action="clear">Очистить</button><button type="button" data-action="solved">Собранный куб</button><button type="button" data-action="demo">Новый скрамбл</button></div><button type="button" class="cfop-solve" data-action="solve">Проверить и найти решение</button></div><div class="cfop-net">${FACE_NAMES.map((face,f)=>`<div class="cfop-face cfop-face-${face}"><div class="cfop-face-label">${face}</div><div class="cfop-face-grid">${Array.from({length:9},(_,i)=>`<button type="button" data-sticker="${f*9+i}" class="${i===4?'is-center':''}" aria-label="${face}${i+1}">${i===4?face:''}</button>`).join('')}</div></div>`).join('')}</div></div></details>
   <p class="cfop-footnote">Рейтинг оценивает удобство, а не измеренное время. Для поиска CROSS/F2L показывается достигнутая глубина; остальные варианты остаются доступны.</p></section>`;
   const root=container.querySelector('.cfop-tool'),$=s=>root.querySelector(s);
-  let input=Array.from(SOLVED),selectedColor=0,candidates=[],recommendedId=null,visibleCount=12,disposed=false,allMoves=[],scrambleMoves=[],busy=false;
-  const config={crossColor:0,rankMode:'execution',pauseForChoice:false,prepareColl:false,speed:1,...settings};
+  let input=Array.from(SOLVED),selectedColor=0,candidates=[],recommendedId=null,visibleCount=12,disposed=false,allMoves=[],scrambleMoves=[],busy=false,frameColor=0,frame=null,liveMoves=[],liveDisplayToInput=[];
+  const indexLabels=Uint8Array.from({length:54},(_,index)=>index);
+  const config={crossColor:0,autoCrossColor:0,rankMode:'execution',pauseForChoice:false,prepareColl:false,speed:1,...settings};
+  frameColor=determineCrossColor(input,config.crossColor,config.autoCrossColor);
+  $('.cfop-timeline-head').insertAdjacentHTML('afterend','<div class="cfop-frame" aria-label="Ориентация решения"><div><strong>Перед решением</strong><code data-setup-moves></code></div><p data-solution-frame></p><button type="button" data-action="copy-setup">Копировать поворот</button></div>');
   let renderer;
-  try{renderer=createRenderer($('.cfop-cube'),{onPaint:paint});}catch(error){$('.cfop-cube').innerHTML=`<p class="cfop-render-error">Не удалось включить 3D. Проверь поддержку WebGL2.<br>${esc(error.message)}</p>`;renderer={setState(){},animateMove(){return Promise.reject(new Error('3D недоступно: '+error.message));},setEditable(){},resetCamera(){},dispose(){}};}
+  try{renderer=createRenderer($('.cfop-cube'),{onPaint:index=>paint(index,true)});}catch(error){$('.cfop-cube').innerHTML=`<p class="cfop-render-error">Не удалось включить 3D. Проверь поддержку WebGL2.<br>${esc(error.message)}</p>`;renderer={setState(){},animateMove(){return Promise.reject(new Error('3D недоступно: '+error.message));},setEditable(){},resetCamera(){},dispose(){}};}
   for(const node of root.querySelectorAll('[data-setting]')){const value=config[node.dataset.setting];if(node.type==='checkbox')node.checked=Boolean(value);else node.value=String(value);}
   $('[data-speed]').textContent=config.speed+'×';
   function getSettings(){return {...config};}
-  function updateInput(){
+  function updateInput({render=true}={}){
+    frame=orientForCross(input,frameColor,{fallback:frame?.moves});
+    updateLiveMapping();
     const counts=new Array(6).fill(0);input.forEach(v=>{if(v>=0&&v<6)counts[v]++;});
-    root.querySelectorAll('[data-sticker]').forEach(node=>{const v=input[Number(node.dataset.sticker)];node.style.background=v>=0&&v<6?PALETTE[v]:'var(--cfop-unpainted)';node.classList.toggle('is-unknown',v<0||v>5);node.classList.remove('is-error');});
+    root.querySelectorAll('[data-sticker]').forEach(node=>{const index=Number(node.dataset.sticker),v=frame.state[index];node.dataset.inputIndex=frame.displayToInput[index];node.style.background=v>=0&&v<6?PALETTE[v]:'var(--cfop-unpainted)';node.classList.toggle('is-unknown',v<0||v>5);node.classList.remove('is-error');});
     root.querySelectorAll('[data-color-count]').forEach(node=>{const n=counts[Number(node.dataset.colorCount)];node.textContent=n+'/9';node.classList.toggle('is-over',n>9);});
     root.querySelectorAll('[data-color]').forEach(node=>node.setAttribute('aria-pressed',String(Number(node.dataset.color)===selectedColor)));
-    renderer.setState(input);
+    $('[data-setup-moves]').textContent=frame.moves.length?frame.moves.join(' '):'Поворот не нужен';
+    $('[data-action="copy-setup"]').disabled=!frame.moves.length;
+    const names=frame.centers.map(color=>NAMES[color]?.toLowerCase()||'не задан');
+    $('[data-solution-frame]').textContent=frame.validCenters?`${names[3]} снизу · ${names[0]} сверху · ${names[2]} спереди · ${names[1]} справа. U — верх, F — перед, R — правая грань.`:'Задай шесть разных цветов центров, чтобы определить ориентацию решения.';
+    if(render)renderer.setState(frame.state);
   }
-  function paint(index){if(busy||disposed)return;input[index]=selectedColor;updateInput();callbacks.onInputChange?.(Array.from(input));}
-  function setInput(next){input=Array.from(next);updateInput();}
+  function updateLiveMapping(){liveDisplayToInput=Array.from(applyAlg(indexLabels,[...frame.moves,...liveMoves]));}
+  function paint(index,live=false){if(busy||disposed)return;const rawIndex=(live?liveDisplayToInput:frame?.displayToInput)?.[index]??index;input[rawIndex]=selectedColor;updateInput();callbacks.onInputChange?.(Array.from(input));}
+  function setInput(next){input=Array.from(next);liveMoves=[];updateInput();}
+  function setFrameColor(color,{render=true}={}){frameColor=determineCrossColor(input,color,frameColor);if(config.crossColor==='auto')config.autoCrossColor=frameColor;updateInput({render});return getFrame();}
+  function getFrame(){return {...frame,color:frameColor,state:[...frame.state],moves:[...frame.moves],centers:[...frame.centers],displayToInput:[...frame.displayToInput],inputToDisplay:[...frame.inputToDisplay]};}
   function setScramble(record){
     scrambleMoves=Array.from(record?.moves||[]);
     $('[data-action="copy-scramble"]').disabled=!scrambleMoves.length;
@@ -39,7 +52,7 @@ export function createSolverView(container,callbacks={},settings={}){
     $('[data-scramble-frame]').textContent=centers?.length===6?`Перед началом: ${NAMES[centers[0]].toLowerCase()} сверху · ${NAMES[centers[2]].toLowerCase()} спереди · ${NAMES[centers[1]].toLowerCase()} справа`:'Начни с собранного куба. Ориентация будет указана здесь.';
   }
   function setStatus(text){$('.cfop-status').textContent=text;}
-  function showValidation(report){const errors=report.errors||report.issues||[];$('.cfop-errors').hidden=!errors.length;$('.cfop-errors').innerHTML=errors.map(e=>`<p>${esc(e.message||e)}</p>`).join('');for(const e of errors)for(const index of e.indices||e.faceletIndices||[])$(`[data-sticker="${index}"]`)?.classList.add('is-error');}
+  function showValidation(report){const errors=report.errors||report.issues||[];$('.cfop-errors').hidden=!errors.length;$('.cfop-errors').innerHTML=errors.map(e=>`<p>${esc(e.message||e)}</p>`).join('');for(const e of errors)for(const index of e.indices||e.faceletIndices||[])$(`[data-sticker="${frame?.inputToDisplay[index]??index}"]`)?.classList.add('is-error');}
   function card(c,recommended=false){
     const cost=c.cost&&typeof c.cost==='object'?c.cost:{};
     const score=Number(c.score??cost.score),htm=Number(c.htm??cost.htm??c.moves?.length??0);
@@ -50,6 +63,7 @@ export function createSolverView(container,callbacks={},settings={}){
   function drawCandidates(){const recommended=candidates.find(c=>c.id===recommendedId)||candidates[0];$('.cfop-recommendation').innerHTML=recommended?card(recommended,true):'<div class="cfop-choice-empty">Поиск ещё не дал вариантов.</div>';const rest=candidates.filter(c=>c!==recommended);$('.cfop-alternatives').innerHTML=rest.slice(0,visibleCount).map(c=>card(c)).join('');$('[data-count]').textContent=candidates.length?String(candidates.length):'';$('[data-action="show-more"]').hidden=visibleCount>=rest.length;root.querySelectorAll('[data-choose]').forEach(b=>b.disabled=busy);}
   function showCandidates(next,{stage,coverage={},recommendedId:id}={}){candidates=Array.from(next||[]);recommendedId=id||candidates[0]?.id;visibleCount=12;$('.cfop-choice-title h2').textContent=stageName(stage);$('.cfop-coverage').textContent=coverage.message||[coverage.completedDepth!=null?'Глубина '+coverage.completedDepth:null,coverage.visitedNodes?'Проверено '+Number(coverage.visitedNodes).toLocaleString('ru')+' узлов':null,coverage.exhaustedDeclaredDomain?'Поиск в указанной области завершён':coverage.incomplete?'Лучшие найденные варианты; поиск можно продолжить':null].filter(Boolean).join(' · ');$('[data-action="search-more"]').hidden=!['CROSS','F2L'].includes(stage);drawCandidates();}
   function setTimeline({executed=[],current=null,upcoming=[],stage}={}){
+    liveMoves=[...executed];updateLiveMapping();
     allMoves=[...executed,...(current?[current]:[]),...upcoming];$('[data-stage]').textContent=stageName(stage);$('[data-action="copy"]').disabled=!allMoves.length;
     $('.cfop-moves').innerHTML=allMoves.length?[...executed.map(m=>`<span class="is-done">${esc(m)}</span>`),...(current?[`<strong class="is-current">${esc(current)}</strong>`]:[]),...upcoming.map(m=>`<span>${esc(m)}</span>`)].join(' '):'<span class="cfop-moves-empty">Здесь появятся ходы решения</span>';
     // Only the notation area scrolls; animation never scrolls the workspace.
@@ -68,7 +82,8 @@ export function createSolverView(container,callbacks={},settings={}){
     else if(action==='pause')callbacks.onPause?.();else if(action==='resume')callbacks.onResume?.();else if(action==='next')callbacks.onStepForward?.();else if(action==='back')callbacks.onStepBack?.();else if(action==='restart')callbacks.onRestart?.();else if(action==='search-more')callbacks.onMore?.();
     else if(action==='show-more'){visibleCount+=24;drawCandidates();}
     else if(action==='copy-scramble')copy(scrambleMoves.join(' '),'Скрамбл скопирован');
-    else if(action==='copy')copy(allMoves.join(' '),'Ходы решения скопированы');
+    else if(action==='copy-setup')copy(frame.moves.join(' '),'Поворот перед решением скопирован');
+    else if(action==='copy')copy([...frame.moves,...allMoves].join(' '),'Поворот и ходы решения скопированы');
   }
   async function copy(value,label){
     if(!value)return;
@@ -82,5 +97,5 @@ export function createSolverView(container,callbacks={},settings={}){
   function inputEvent(event){if(event.target.dataset.setting==='speed')change(event);}
   root.addEventListener('click',click);root.addEventListener('change',change);root.addEventListener('input',inputEvent);
   updateInput();
-  return {renderer,setInput,setScramble,getInput:()=>Array.from(input),getSettings,showStatus:setStatus,showValidation,showCandidates,setTimeline,setBusy,collapseEditor(){root.querySelector('.cfop-editor').open=false;},expandEditor(){root.querySelector('.cfop-editor').open=true;},dispose(){disposed=true;renderer.dispose();root.removeEventListener('click',click);root.removeEventListener('change',change);root.removeEventListener('input',inputEvent);container.replaceChildren();}};
+  return {renderer,setInput,setScramble,setFrameColor,getFrame,getInput:()=>Array.from(input),getSettings,showStatus:setStatus,showValidation,showCandidates,setTimeline,setBusy,collapseEditor(){root.querySelector('.cfop-editor').open=false;},expandEditor(){root.querySelector('.cfop-editor').open=true;},dispose(){disposed=true;renderer.dispose();root.removeEventListener('click',click);root.removeEventListener('change',change);root.removeEventListener('input',inputEvent);container.replaceChildren();}};
 }

@@ -11,7 +11,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <Product>RG2 · Desktop</Product>
     <Description>Offline desktop edition of RG2</Description>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

@@ -1,6 +1,7 @@
-import {applyAlg,rotateToCross,isF2L,stateKey,solvedSlots} from './core.mjs';
+import {applyAlg,centers,restoreFrameSequence,isF2L,stateKey,solvedSlots} from './core.mjs';
+import {orientForCross} from './orientation.mjs';
 import {searchCross,searchF2L} from './search.mjs';
-import {loadCatalog,getApplicable,costScore,bestContinuation,matchF2L} from './catalog.mjs';
+import {loadCatalog,getApplicable,costScore,moveMetrics,bestContinuation,matchF2L} from './catalog.mjs';
 let catalogPromise;
 const getCatalog=()=>catalogPromise??=loadCatalog();
 const score=(moves,settings)=>costScore(moves,settings.rankMode==='htm'?'htm':'execution');
@@ -9,7 +10,7 @@ function decorate(c,settings){
  return {...c,score:cost,title:c.title|| (c.family==='CROSS'?`Крест${c.xCrossSlots?.length?' + '+c.xCrossSlots.length+' пара':''}`:`Пара ${c.targetSlot||''} · ${c.solvedAfter?.length||0}/4`),recommendationScore:settings.rankMode==='htm'?lookahead:cost+Math.max(0,lookahead-(c.htm||0))*.75};
 }
 self.onmessage=async event=>{
- const {id,revision,state:raw,stage,settings={},more=0,normalize=false}=event.data;
+ const {id,revision,state:raw,inputState,frameCenters,stage,settings={},more=0,normalize=false}=event.data;
  const state=Uint8Array.from(raw),hash=stateKey(state);
  try{
   let result;
@@ -17,12 +18,13 @@ self.onmessage=async event=>{
    const colors=normalize?(settings.crossColor==='auto'?[0,1,2,3,4,5]:[Number(settings.crossColor??0)]):[null];
    const candidates=[],reports=[];
    for(const color of colors){
-    const frame=color===null?{state,moves:[]}:rotateToCross(state,color);
+    const frame=color===null?{state,moves:[]}:orientForCross(inputState?.length===54?inputState:state,color);
+    if(color!==null&&!frame.validCenters)throw new Error('Для ориентации креста нужны шесть разных цветов центров.');
     const found=searchCross(frame.state,{maxCandidates:24*(more+1),maxMillis:2400+more*1500,maxNodes:300000*(more+1),extraDepth:Math.min(3,1+more)});
     for(const candidate of found.candidates){
      const look=searchF2L(Uint8Array.from(candidate.state),{maxCandidates:1,maxMillis:180,maxNodes:4000,lookahead:true});
      const first=look.candidates[0];
-     candidates.push(decorate({...candidate,id:`${color??'d'}:${candidate.id}`,family:'CROSS',moves:[...frame.moves,...candidate.moves],estimatedTotalHTM:candidate.htm+(first?.estimatedTotalHTM??first?.htm??0),crossColor:color,expectedPll:undefined},settings));
+     candidates.push(decorate({...candidate,id:`${color??'d'}:${candidate.id}`,family:'CROSS',moves:[...candidate.moves],...(color===null?{}:{baseState:Array.from(frame.state),setupMoves:[...frame.moves]}),estimatedTotalHTM:candidate.htm+(first?.estimatedTotalHTM??first?.htm??0),crossColor:centers(frame.state)[3],expectedPll:undefined},settings));
     }
     reports.push(found.coverage);
    }
@@ -54,7 +56,26 @@ self.onmessage=async event=>{
    const candidates=getApplicable(state,{stage,catalog,preferColl:true,allowEollPrep:settings.prepareColl,profile:settings.rankMode==='htm'?'htm':'execution'}).map(c=>({...c,score:c.cost,expectedPll:c.expectedPll?`${c.nextColl?.moves?.length?'COLL: '+c.nextColl.moves.join(' ')+'; затем ':''}${c.expectedPll.title||'PLL'} · ${c.expectedPll.moves?.join(' ')||'без ходов'}`:undefined}));
    result={candidates,coverage:{exhaustedDeclaredDomain:true,message:`Проверены все применимые формулы локальной базы, включая AUF и ориентации. ${candidates.length} вариантов. Для OLL/COLL рейтинг учитывает следующий PLL.`}};
   }
-  for(const c of result.candidates){const actual=applyAlg(state,c.moves);if(c.state&&stateKey(actual)!==stateKey(c.state))throw new Error('Результат алгоритма не совпадает с состоянием куба.');c.state=Array.from(actual);}
+  const profile=settings.rankMode==='htm'?'htm':'execution',round=value=>Math.round(value*10000)/10000;
+  for(const c of result.candidates){
+   const beforeMetrics=moveMetrics(c.moves,profile);
+   const actual=applyAlg(c.baseState||state,c.moves);
+   if(c.state&&stateKey(actual)!==stateKey(c.state))throw new Error('Результат алгоритма не совпадает с состоянием куба.');
+   const target=c.baseState?centers(c.baseState):frameCenters?.length===6?frameCenters:centers(state);
+   const restore=restoreFrameSequence(actual,target);
+   if(restore.length){c.algorithmMoves=[...c.moves];c.frameRestoreMoves=restore;c.moves=[...c.moves,...restore];}
+   const metrics=moveMetrics(c.moves,profile),delta=round(metrics.score-beforeMetrics.score);
+   // The prior recommendation already includes the bounded F2L/last-layer
+   // continuation. Charge only this segment's new real frame-return moves.
+   if(Number.isFinite(c.recommendationScore))c.recommendationScore=round(c.recommendationScore+delta);
+   else c.recommendationScore=metrics.score;
+   if(Number.isFinite(c.totalCost))c.totalCost=round(c.totalCost+delta);
+   for(const [total,metric] of [['totalHtm','htm'],['totalQtm','qtm'],['totalRotations','rotations']])if(Number.isFinite(c[total]))c[total]+=metrics[metric]-beforeMetrics[metric];
+   if(restore.length)c.frameRestoreCost=delta;
+   Object.assign(c,metrics,{cost:metrics.score,score:metrics.score});
+   c.state=Array.from(applyAlg(actual,restore));
+  }
+  result.candidates.sort((a,b)=>a.recommendationScore-b.recommendationScore||(['LAST_LAYER','COLL'].includes(stage)?Number(b.family==='COLL')-Number(a.family==='COLL'):0)||a.htm-b.htm||a.rotations-b.rotations);
   self.postMessage({id,revision,hash,stage,...result});
  }catch(error){self.postMessage({id,revision,hash,stage,error:error.message,stack:error.stack});}
 };

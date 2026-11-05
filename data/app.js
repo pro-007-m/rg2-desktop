@@ -9,6 +9,8 @@
   let historyIndex = 0, historyMax = 0, nativeDark, searchIndex = [], bootError = null;
   let favorites = new Set(read('rg2.favorites', []));
   let readerSize = read('rg2.readerSize', 'normal');
+  let focusedAlgorithms = read('rg2.focusedAlgorithms', {});
+  if (!focusedAlgorithms || typeof focusedAlgorithms !== 'object' || Array.isArray(focusedAlgorithms)) focusedAlgorithms = {};
   let preference; try { preference=localStorage.getItem('rg2.theme') || 'system'; } catch { preference='system'; }
   if (!['system','atelier','graphite'].includes(preference)) preference='system';
   const systemTheme = matchMedia('(prefers-color-scheme: dark)');
@@ -19,15 +21,18 @@
     {id:'timer', title:'Таймер', icon:'assets/images/trainers/timer.png', description:'Время сборок и результаты.'},
     {id:'scramble', title:'Генератор скрамблов', icon:'assets/images/trainers/scramble_gen.png', description:'Новая последовательность для перемешивания.'},
     {id:'pll', title:'PLL тренажер', icon:'assets/images/trainers/pll_trainer.png', description:'Распознавание PLL по сторонам кубика.'},
-    {id:'alphabet', title:'Тренажер азбуки', icon:'assets/images/trainers/azbuka_trainer.png', description:'Буквы элементов для слепой сборки.'}
+    {id:'alphabet', title:'Тренажер азбуки', icon:'assets/images/trainers/azbuka_trainer.png', description:'Буквы элементов для слепой сборки.'},
+    {id:'cfop-solver', title:'Решатель CFOP + COLL', icon:'assets/images/main3x3/main_2.png', description:'Раскрась куб и собери его по этапам с выбором алгоритмов и 3D.'}
   ];
   function normalizeTool(id) { return ({azbuka:'alphabet',plltest:'pll',scrmbl:'scramble',scrambler:'scramble'})[String(id).toLowerCase()] || String(id).toLowerCase(); }
   function orderedTools() {
     const original=phases.get(catalog?.toolsPhase || 'GAMES')?.items.filter(item=>item.kind==='tool') || [];
-    return original.length?original.map(item=>{
+    const ordered=original.length?original.map(item=>{
       const id=normalizeTool(item.tool || item.id),base=toolDefinitions.find(tool=>tool.id===id);
       return {...base,id,title:item.title,icon:item.icon || base?.icon};
-    }):toolDefinitions;
+    }):[...toolDefinitions];
+    for(const tool of toolDefinitions)if(!ordered.some(item=>item.id===tool.id))ordered.push(tool);
+    return ordered;
   }
   function applyTheme() {
     const dark = nativeDark === undefined ? systemTheme.matches : nativeDark;
@@ -249,18 +254,37 @@
     });
     return document.importNode(parsed.body,true);
   }
-  function isAlgorithm(text) {
-    const value=text.trim();
-    return value.length>=7 && value.length<=500 && /^[RLUDFBMESXYZrludfbmesxyzuw2'’′²()\[\]:,\.\s/\+\-0-9]+$/.test(value) && (value.match(/[RLUDFBMESXYZrludfbmesxyz]/g)||[]).length>=3;
-  }
   function prepareArticle(container,html) {
     const content=sanitizeArticle(html);while(content.firstChild)container.appendChild(content.firstChild);
-    container.querySelectorAll('b,strong,code').forEach(el=>{
-      if(el.closest('.algorithm-block') || !isAlgorithm(el.textContent))return;
-      const formula=el.textContent.trim(),block=document.createElement('span');block.className='algorithm-block';
-      el.replaceWith(block);block.appendChild(el);
-      const button=document.createElement('button');button.type='button';button.className='copy-algorithm';button.dataset.copyAlgorithm=formula;button.title='Копировать алгоритм';button.setAttribute('aria-label','Копировать алгоритм');button.innerHTML=icon('copy');block.appendChild(button);
+    window.RG2Algorithms.prepare(container,{icon});
+    container.dataset.algorithmFocusKey=`${route?.type || 'item'}:${route?.id || ''}`;
+    applyAlgorithmFocus(container);
+  }
+  function applyAlgorithmFocus(container) {
+    const blocks=[...container.querySelectorAll('.algorithm-block')];
+    const saved=focusedAlgorithms[container.dataset.algorithmFocusKey];
+    let selected=saved?blocks.find(block=>block.querySelector('[data-focus-algorithm]')?.dataset.focusAlgorithm===saved.id && block.querySelector('[data-copy-algorithm]')?.dataset.copyAlgorithm===saved.formula):null;
+    if(!selected && saved)selected=blocks.find(block=>block.querySelector('[data-copy-algorithm]')?.dataset.copyAlgorithm===saved.formula);
+    container.classList.toggle('has-focused-algorithm',Boolean(selected));
+    blocks.forEach(block=>{
+      const active=block===selected,button=block.querySelector('[data-focus-algorithm]');
+      block.classList.toggle('is-focused',active);
+      if(!button)return;
+      button.setAttribute('aria-pressed',String(active));
+      button.setAttribute('aria-label',active?'Снять выделение алгоритма':'Выделить алгоритм');
+      button.title=active?'Снять выделение алгоритма':'Выделить алгоритм';
+      button.innerHTML=icon(active?'check':'focus')+`<span>${active?'Выделен':'Выделить'}</span>`;
     });
+  }
+  function toggleAlgorithmFocus(button) {
+    const container=button.closest('.article-body'),block=button.closest('.algorithm-block');
+    if(!container || !block)return;
+    const key=container.dataset.algorithmFocusKey;
+    if(block.classList.contains('is-focused'))delete focusedAlgorithms[key];
+    else focusedAlgorithms[key]={id:button.dataset.focusAlgorithm,formula:block.querySelector('[data-copy-algorithm]')?.dataset.copyAlgorithm || ''};
+    write('rg2.focusedAlgorithms',focusedAlgorithms);
+    applyAlgorithmFocus(container);
+    if(block.classList.contains('is-focused'))block.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
   }
   function videoLink(item) {
     const id=item.videoId || item.source_videoId || item.source_video_id;
@@ -310,7 +334,7 @@
     setBreadcrumbs([{title:'Настройки'}]);
     $('#content').innerHTML=`<div class="settings-layout"><div class="page-heading"><div class="eyebrow">Рабочее пространство</div><h1 class="page-title">Настройки</h1></div><section class="settings-block"><h2>Оформление</h2><p>Выберите свой стиль или доверьте выбор системе.</p><div class="theme-options">${[
       ['system','Как в системе','По умолчанию'],['atelier','Atelier','Светлая · тёплая и спокойная'],['graphite','Graphite','Тёмная · графит и синий']
-    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div></section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p>RG2 · Desktop 1.0.0<br>Алгоритмы, обучалки, схемы и авторские пояснения из RG2F 4.241017.6 · RubicsGuide.</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section></div>`;
+    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div></section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p>RG2 · Desktop 1.1.0<br>Алгоритмы, обучалки, схемы и авторские пояснения из RG2F 4.241017.6 · RubicsGuide.</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section></div>`;
     const aboutItem=extraItems.find(isAboutItem);
     if(aboutItem){const button=document.createElement('button');button.className='action-button';button.dataset.openItem=aboutItem.id;button.innerHTML=icon('book')+' О программе и авторах RG2 '+icon('arrow');$('#content .settings-block:last-child').appendChild(button);}
     applyTheme();
@@ -340,6 +364,13 @@
   function renderTool() {
     const tool=toolDefinitions.find(t=>t.id===route.id);if(!tool){renderMissing();return;}
     setBreadcrumbs([{title:'Тренажеры',route:{type:'tools'}},{title:tool.title}]);
+    if(tool.id==='cfop-solver'){
+      const host=document.createElement('div');host.id='tool-host';$('#content').replaceChildren(host);host.textContent='Загружаю решатель…';
+      let cancelled=false,dispose=null;
+      toolDisposer=()=>{cancelled=true;dispose?.();};
+      import('./solver/tool.mjs').then(module=>{if(!cancelled&&host.isConnected)dispose=module.mount(host);}).catch(error=>{if(!cancelled)host.textContent='Не удалось открыть решатель: '+error.message;});
+      return;
+    }
     $('#content').innerHTML=`<button class="back-link" data-route="${esc(JSON.stringify({type:'tools'}))}">${icon('back')} Тренажеры</button><div class="page-heading"><div class="eyebrow">Практика</div><h1 class="page-title">${tool.title}</h1></div><div id="tool-host" class="tool-host"></div><div id="tool-help"></div>`;
     if(window.RG2Tools?.mount){
       toolDisposer=window.RG2Tools.mount($('#tool-host'),tool.id,{catalog,trainerData,assetRoot:'',hideSourceHelp:true,initialScramble:route.scramble,navigatePhase:id=>navigate({type:'phase',id}),openItem,toast});
@@ -381,9 +412,10 @@
     if(button.dataset.route){event.preventDefault();try{navigate(JSON.parse(button.dataset.route));}catch{}return;}
     if(button.dataset.openItem){event.preventDefault();openItem(button.dataset.openItem);return;}
     if(button.dataset.favorite){event.preventDefault();toggleFavorite(button.dataset.favorite);return;}
-    if(button.dataset.copyAlgorithm){copyText(button.dataset.copyAlgorithm,button.dataset.copyLabel);return;}
+    if(button.matches('[data-focus-algorithm]')){event.preventDefault();toggleAlgorithmFocus(button);return;}
+    if(button.dataset.copyAlgorithm){event.preventDefault();copyText(button.dataset.copyAlgorithm,button.dataset.copyLabel);return;}
     if(button.dataset.tool){navigate({type:'tool',id:button.dataset.tool});return;}
-    if(button.dataset.reader){readerSize=button.dataset.reader;write('rg2.readerSize',readerSize);const article=$('#article-body');if(article)article.className=`article-body reader-${readerSize}`;return;}
+    if(button.dataset.reader){readerSize=button.dataset.reader;write('rg2.readerSize',readerSize);const article=$('#article-body');if(article){article.classList.remove('reader-small','reader-normal','reader-large');article.classList.add(`reader-${readerSize}`);}return;}
     if(button.dataset.rg2Link){event.preventDefault();handleRG2Link(button.dataset.rg2Link);return;}
   });
   document.addEventListener('click',event=>{

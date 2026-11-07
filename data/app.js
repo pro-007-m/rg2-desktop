@@ -5,6 +5,44 @@
   const icon = (name, cls = '') => `<svg class="${esc(cls)}" aria-hidden="true"><use href="#i-${esc(name)}"/></svg>`;
   const read = (key, fallback) => { try { const value=localStorage.getItem(key); return value === null ? fallback : JSON.parse(value); } catch { return fallback; } };
   const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
+  const APP_VERSION='1.5.0';
+  const UPDATE_RELEASE_URL='https://github.com/pro-007-m/rg2-desktop/releases/latest';
+  const UPDATE_STATUSES=new Set(['idle','checking','available','up-to-date','downloading','verifying','installing','cancelled','error']);
+  const UPDATE_BUSY=new Set(['checking','downloading','verifying','installing']);
+  let updateState={status:'idle',currentVersion:APP_VERSION,version:null,progress:null,message:'Нажмите «Проверить обновления».'};
+  function hasNativeUpdater(){return typeof window.chrome?.webview?.postMessage==='function';}
+  function updateVersion(value){return typeof value==='string'&&value.length<=32&&value.trim()===value&&/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(value);}
+  function applyUpdateStatus(data){
+    if(data?.type!=='update-status'||!UPDATE_STATUSES.has(data.status))return;
+    updateState={status:data.status,currentVersion:updateVersion(data.currentVersion)?data.currentVersion:updateState.currentVersion,
+      version:updateVersion(data.version)?data.version:null,
+      progress:Number.isInteger(data.progress)?Math.min(100,Math.max(0,data.progress)):null,
+      message:typeof data.message==='string'?data.message.slice(0,600):'Проверьте обновления ещё раз.'};
+    refreshUpdateControls();
+  }
+  function refreshUpdateControls(){
+    const native=hasNativeUpdater(),busy=UPDATE_BUSY.has(updateState.status),check=$('#update-check'),install=$('#update-install'),cancel=$('#update-cancel'),progress=$('#update-progress');
+    if(check){check.hidden=!native;check.disabled=busy;}
+    if(install){install.hidden=!native||updateState.status!=='available'||!updateState.version;install.disabled=busy;install.textContent=updateState.version?'Скачать и установить '+updateState.version:'Скачать и установить';}
+    if(cancel){cancel.hidden=!native||!busy||updateState.status==='installing';cancel.disabled=updateState.status==='installing';}
+    if(progress){progress.hidden=!native||updateState.status!=='downloading'||updateState.progress===null;if(updateState.progress!==null)progress.value=updateState.progress;}
+    const status=$('#update-status');if(status)status.textContent=native?updateState.message:'Проверка и установка обновлений доступны в приложении Windows. В браузере откройте страницу выпусков.';
+    const version=$('#update-current-version');if(version)version.textContent='Установлена версия '+updateState.currentVersion;
+    const appVersion=$('#app-version');if(appVersion)appVersion.textContent='RG2 · Desktop '+updateState.currentVersion;
+  }
+  function requestUpdate(action){
+    if(!hasNativeUpdater())return;
+    if(action==='update-check'&&!UPDATE_BUSY.has(updateState.status))updateState={...updateState,status:'checking',version:null,progress:null,message:'Проверяю новый выпуск…'};
+    else if(action==='update-install'&&updateState.status==='available'&&updateState.version)updateState={...updateState,status:'downloading',progress:0,message:'Загружаю установщик…'};
+    else if(action==='update-cancel'&&UPDATE_BUSY.has(updateState.status)&&updateState.status!=='installing')updateState={...updateState,message:'Отменяю обновление…'};
+    else return;
+    refreshUpdateControls();
+    try{window.chrome.webview.postMessage({type:action});}
+    catch{updateState={...updateState,status:'error',progress:null,message:'Не удалось запустить обновление. Перезапустите приложение или откройте страницу выпусков.'};refreshUpdateControls();}
+  }
+  function updateControls(){
+    return `<section class="settings-block app-updates" aria-labelledby="updates-heading"><h2 id="updates-heading">Обновления</h2><p id="update-current-version">Установлена версия ${esc(updateState.currentVersion)}</p><div class="app-update-actions"><button type="button" class="action-button" id="update-check">Проверить обновления</button><button type="button" class="action-button update-install" id="update-install" hidden>Скачать и установить</button><button type="button" class="action-button" id="update-cancel" hidden>Отменить</button></div><progress id="update-progress" max="100" value="0" aria-label="Загрузка обновления" hidden></progress><p class="app-update-status" id="update-status" role="status" aria-live="polite"></p><a class="app-release-link" href="${UPDATE_RELEASE_URL}" target="_blank" rel="noopener noreferrer">Открыть страницу выпусков ${icon('arrow')}</a></section>`;
+  }
   const MODEL_IMAGE_KEY='rg2.model.image.v1';
   const MODEL_IMAGE_FIELDS={
     contrast:{label:'Контраст',min:70,max:150,step:1,default:100},
@@ -105,7 +143,7 @@
     applyTheme();
   }
   systemTheme.addEventListener('change', () => {nativeDark=undefined;applyTheme();});
-  try {window.chrome?.webview?.addEventListener('message', event => {if(event.data?.type==='system-theme' && typeof event.data.dark==='boolean'){nativeDark=event.data.dark;applyTheme();}});} catch {}
+  try {window.chrome?.webview?.addEventListener('message', event => {if(event.data?.type==='system-theme' && typeof event.data.dark==='boolean'){nativeDark=event.data.dark;applyTheme();}else if(event.data?.type==='update-status')applyUpdateStatus(event.data);});} catch {}
   applyTheme();
 
   function plain(html) {
@@ -401,8 +439,8 @@
     setBreadcrumbs([{title:'Настройки'}]);
     $('#content').innerHTML=`<div class="settings-layout"><div class="page-heading"><div class="eyebrow">Рабочее пространство</div><h1 class="page-title">Настройки</h1></div><section class="settings-block"><h2>Оформление</h2><p>Выберите свой стиль или доверьте выбор системе.</p><div class="theme-options">${[
       ['system','Как в системе','По умолчанию'],['atelier','Atelier','Светлая · тёплая и спокойная'],['graphite','Graphite','Тёмная · графит и синий']
-    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div><label class="settings-row model-neon-setting" id="model-neon-setting" for="model-neon-toggle" hidden><span><strong id="model-neon-label">Неоновое свечение деталей</strong><small id="model-neon-help">Цветные элементы 3D-куба светятся в тёмной теме.</small></span><input type="checkbox" id="model-neon-toggle" aria-labelledby="model-neon-label" aria-describedby="model-neon-help"></label>${modelImageControls()}</section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p>RG2 · Desktop 1.4.0</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section></div>`;
-    applyTheme();mountModelImagePreview();
+    ].map(([value,title,subtitle])=>`<label class="theme-choice"><span class="theme-swatch ${value}" aria-hidden="true"></span><input type="radio" name="theme" value="${value}" ${preference===value?'checked':''}><strong>${title}</strong><small>${subtitle}</small></label>`).join('')}</div><div class="settings-note" id="theme-status"></div><label class="settings-row model-neon-setting" id="model-neon-setting" for="model-neon-toggle" hidden><span><strong id="model-neon-label">Неоновое свечение деталей</strong><small id="model-neon-help">Цветные элементы 3D-куба светятся в тёмной теме.</small></span><input type="checkbox" id="model-neon-toggle" aria-labelledby="model-neon-label" aria-describedby="model-neon-help"></label>${modelImageControls()}</section><section class="settings-block"><h2>Горячие клавиши</h2><div class="keyboard-grid"><div class="keyboard-item"><span>Поиск по библиотеке</span><kbd>/</kbd></div><div class="keyboard-item"><span>Назад</span><kbd>Alt + ←</kbd></div><div class="keyboard-item"><span>Вперёд</span><kbd>Alt + →</kbd></div><div class="keyboard-item"><span>Закрыть изображение / вернуться</span><kbd>Esc</kbd></div></div></section><section class="settings-block"><h2>О приложении</h2><p id="app-version">RG2 · Desktop ${esc(updateState.currentVersion)}</p><div class="settings-row"><span><strong>Библиотека доступна без интернета</strong><small>Видео и внешние ссылки открываются в браузере.</small></span>${icon('book')}</div><div class="settings-row"><span><strong>Избранное и настройки сохраняются на этом компьютере</strong><small>Можно продолжить с того раздела, на котором вы остановились.</small></span>${icon('star')}</div></section>${updateControls()}</div>`;
+    applyTheme();refreshUpdateControls();mountModelImagePreview();
   }
   function renderTools() {
     setBreadcrumbs([{title:'Тренажеры'}]);
@@ -473,6 +511,7 @@
   }
   document.addEventListener('click',event=>{
     const button=event.target.closest('button,a,label');if(!button)return;
+    if(['update-check','update-install','update-cancel'].includes(button.id)){requestUpdate(button.id);return;}
     if(button.id==='model-image-reset'){resetModelImageSettings();return;}
     if(button.matches('[data-home]')){event.preventDefault();navigate(defaultRoute());return;}
     if(button.dataset.route){event.preventDefault();try{navigate(JSON.parse(button.dataset.route));}catch{}return;}
@@ -517,7 +556,7 @@
   window.addEventListener('popstate',event=>{
     if(!catalog)return;route=normalizeRoute(event.state?.route || routeFromHash() || defaultRoute());historyIndex=event.state?.index ?? 0;write('rg2.lastRoute',route);render();$('#workspace').scrollTop=0;
   });
-  window.RG2App={ready,navigate,openItem,setTheme,setModelNeon,setModelImageSettings,toast,get catalog(){return catalog;},get trainerData(){return trainerData;},get state(){return {route,themePreference:preference,effectiveTheme:document.documentElement.dataset.theme,modelNeonPreference:modelNeon,modelNeonActive:document.documentElement.dataset.modelNeon==='on',modelImageSettings:{...modelImageSettings},favorites:[...favorites],historyIndex,historyMax,bootError};},get items(){return items;},get phases(){return phases;},sanitizeArticle,handleRG2Link};
+  window.RG2App={ready,navigate,openItem,setTheme,setModelNeon,setModelImageSettings,toast,get catalog(){return catalog;},get trainerData(){return trainerData;},get state(){return {route,themePreference:preference,effectiveTheme:document.documentElement.dataset.theme,modelNeonPreference:modelNeon,modelNeonActive:document.documentElement.dataset.modelNeon==='on',modelImageSettings:{...modelImageSettings},updateStatus:{...updateState},favorites:[...favorites],historyIndex,historyMax,bootError};},get items(){return items;},get phases(){return phases;},sanitizeArticle,handleRG2Link};
   async function initialize() {
     try {
       const [catalogResult,trainerResult]=await Promise.allSettled([fetch('catalog.json').then(response=>{if(!response.ok)throw new Error('catalog '+response.status);return response.json();}),fetch('trainer-data.json').then(response=>response.ok?response.json():null)]);

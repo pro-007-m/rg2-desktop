@@ -11,10 +11,12 @@
     <PlatformTarget>x64</PlatformTarget>
     <Product>RG2 · Desktop</Product>
     <Description>Offline desktop edition of RG2</Description>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
+    <RuntimeFrameworkVersion>10.0.14</RuntimeFrameworkVersion>
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
     <Content Include="data\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

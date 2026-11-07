@@ -1,0 +1,16 @@
+{
+  "innoSetup": {
+    "version": "7.1.1-x64",
+    "source": "https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe",
+    "sha256": "8a5a6711c3766a6e5fb74f280ba0e3551e719ce94538d901fdbd1f8f9920b3f0",
+    "authenticodePublisher": "Pyrsys B.V."
+  },
+  "webView2StandaloneX64": {
+    "source": "https://go.microsoft.com/fwlink/?linkid=2124701",
+    "bytes": 214927568,
+    "sha256": "2688308af55753c62fda4e8140024e230c1ffc16b7c091b25889572f38dff6e8",
+    "authenticodePublisher": "Microsoft Corporation",
+    "checkedOn": "2026-11-07"
+  },
+  "bundledDotnetRuntime": "10.0.14"
+}

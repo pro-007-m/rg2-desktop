@@ -1,0 +1,26 @@
+{
+  "release": "1.5.0",
+  "platform": "Windows x64",
+  "isolatedInstallerIdentity": true,
+  "realUserProfileUsed": false,
+  "lifecycle": {
+    "cleanInstall": true,
+    "upgradePreservesUserDataAndStagedUpdates": true,
+    "sameVersionRepairsDeletedPayload": true,
+    "downgradeBlockedWithoutChangingData": true,
+    "uninstallCanPreserveProfile": true,
+    "reinstallReusesPreservedProfile": true,
+    "uninstallPurgeRemovesProfile": true,
+    "registrationAndShortcutsRemoved": true,
+    "sharedMicrosoftRuntimesUnchanged": true
+  },
+  "updaterFixtures": {
+    "groups": 11,
+    "assertions": 98,
+    "realInstallersLaunchedByFixtures": false,
+    "realNetworkUsedByFixtures": false
+  },
+  "settingsTests": 13,
+  "fullApplicationRegressionSuite": "passed",
+  "installerWizardObservedThroughAgentDesktop": true
+}

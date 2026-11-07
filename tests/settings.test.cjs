@@ -19,13 +19,13 @@ test('Settings show current app version and local controls while original credit
     assert.equal(await window.RG2App.ready, true);
     window.RG2App.navigate({ type: 'settings' });
     const settings = window.document.querySelector('.settings-layout');
-    assert.ok(settings.textContent.includes('RG2 · Desktop 1.4.0'));
+    assert.ok(settings.textContent.includes('RG2 · Desktop 1.5.0'));
     assert.ok(!/RG2F|RubicsGuide|автор/i.test(settings.textContent));
     assert.equal(settings.querySelectorAll('[data-open-item]').length, 0);
     assert.equal(settings.querySelectorAll('input[name="theme"]').length, 3);
     assert.ok(settings.textContent.includes('Горячие клавиши'));
     assert.ok(settings.textContent.includes('сохраняются на этом компьютере'));
-    assert.match(read('RG2.Desktop.csproj'), /<Version>1\.4\.0<\/Version>/);
+    assert.match(read('RG2.Desktop.csproj'), /<Version>1\.5\.0<\/Version>/);
     assert.ok(window.RG2App.items.has('ABOUT-0'));
     window.RG2App.openItem('ABOUT-0');
     assert.ok(window.document.querySelector('#article-body').textContent.trim().length > 100);
@@ -33,13 +33,14 @@ test('Settings show current app version and local controls while original credit
   } finally { dom.window.close(); }
 });
 
-async function application({ theme = 'system', neon, neonRaw, imageSettings, imageRaw, mediaDark = false } = {}) {
+async function application({ theme = 'system', neon, neonRaw, imageSettings, imageRaw, mediaDark = false, nativeBridge = true } = {}) {
   const dom = new JSDOM(read('data/index.html'), { url: 'https://rg2.test/', runScripts: 'outside-only', pretendToBeVisual: true });
   const { window } = dom;
   const mediaListeners = new Set(), nativeListeners = new Set();
+  const nativeMessages = [];
   const media = { matches: mediaDark, addEventListener(type, listener) { if (type === 'change') mediaListeners.add(listener); }, removeEventListener(type, listener) { mediaListeners.delete(listener); } };
   window.matchMedia = query => query === '(prefers-color-scheme: dark)' ? media : { matches: false, addEventListener() {}, removeEventListener() {} };
-  window.chrome = { webview: { postMessage() {}, addEventListener(type, listener) { if (type === 'message') nativeListeners.add(listener); } } };
+  if (nativeBridge) window.chrome = { webview: { postMessage(message) { nativeMessages.push(message); }, addEventListener(type, listener) { if (type === 'message') nativeListeners.add(listener); } } };
   window.HTMLElement.prototype.scrollIntoView = function () {};
   window.localStorage.setItem('rg2.theme', theme);
   if (neonRaw !== undefined) window.localStorage.setItem('rg2.model.neon', neonRaw);
@@ -55,7 +56,8 @@ async function application({ theme = 'system', neon, neonRaw, imageSettings, ima
   window.eval(read('data/app.js'));
   assert.equal(await window.RG2App.ready, true);
   window.RG2App.navigate({ type: 'settings' });
-  return { window, dom,
+  return { window, dom, nativeMessages,
+    nativeMessage(data) { for (const listener of nativeListeners) listener({ data }); },
     nativeTheme(dark) { for (const listener of nativeListeners) listener({ data: { type: 'system-theme', dark } }); },
     mediaTheme(dark) { media.matches = dark; for (const listener of mediaListeners) listener({ matches: dark }); },
     row: () => window.document.querySelector('#model-neon-setting'),
@@ -237,5 +239,73 @@ test('Как в развёртке resets all image controls and turns neon off 
     assert.equal(app.window.document.documentElement.dataset.theme, 'graphite');
     assert.equal(app.toggle().checked, false);
     assert.equal(app.window.document.querySelector('[data-model-image-row="glow"]').hidden, true);
+  } finally { app.dom.window.close(); }
+});
+
+test('Updater performs no automatic actions and sends only explicit fixed native commands', async () => {
+  const app = await application();
+  const commands = () => JSON.parse(JSON.stringify(app.nativeMessages.filter(message => message.type.startsWith('update-'))));
+  const node = id => app.window.document.querySelector('#' + id);
+  try {
+    assert.deepEqual(commands(), [], 'Opening settings must not check or download automatically');
+    node('update-check').click();
+    assert.deepEqual(commands(), [{ type: 'update-check' }]);
+    assert.equal(node('update-check').disabled, true);
+    assert.equal(node('update-cancel').hidden, false);
+    node('update-check').click();
+    assert.equal(commands().length, 1, 'Busy updater posted a second check');
+    app.nativeMessage({ type: 'update-status', status: 'available', currentVersion: '1.5.0', version: '1.5.1', message: 'Доступна новая версия.' });
+    assert.equal(node('update-install').hidden, false);
+    assert.equal(node('update-install').textContent, 'Скачать и установить 1.5.1');
+    assert.equal(commands().length, 1, 'An available release must still wait for a click');
+    node('update-install').click();
+    assert.deepEqual(commands(), [{ type: 'update-check' }, { type: 'update-install' }]);
+    assert.equal(node('update-install').hidden, true);
+    app.nativeMessage({ type: 'update-status', status: 'downloading', currentVersion: '1.5.0', version: '1.5.1', progress: 53, message: 'Загрузка…' });
+    assert.equal(node('update-progress').hidden, false);
+    assert.equal(node('update-progress').value, 53);
+    node('update-cancel').click();
+    assert.deepEqual(commands().at(-1), { type: 'update-cancel' });
+    app.nativeMessage({ type: 'update-status', status: 'cancelled', currentVersion: '1.5.0', message: 'Обновление отменено.' });
+    assert.equal(node('update-check').disabled, false);
+    assert.equal(node('update-cancel').hidden, true);
+    assert.equal(node('update-progress').hidden, true);
+    node('update-check').click();
+    assert.deepEqual(commands().at(-1), { type: 'update-check' }, 'Cancelled checks must be retryable');
+  } finally { app.dom.window.close(); }
+});
+
+test('Browser preview exposes the fixed release page without pretending to install updates', async () => {
+  const app = await application({ nativeBridge: false });
+  try {
+    const document = app.window.document;
+    assert.equal(document.querySelector('#update-check').hidden, true);
+    assert.equal(document.querySelector('#update-install').hidden, true);
+    assert.equal(document.querySelector('#update-cancel').hidden, true);
+    assert.equal(document.querySelector('.app-release-link').href, 'https://github.com/pro-007-m/rg2-desktop/releases/latest');
+    assert.ok(document.querySelector('#update-status').textContent.includes('в приложении Windows'));
+    assert.deepEqual(app.nativeMessages, []);
+  } finally { app.dom.window.close(); }
+});
+
+test('Native update status is safely rendered, versioned and recoverable after invalid messages/errors', async () => {
+  const app = await application();
+  const node = id => app.window.document.querySelector('#' + id);
+  try {
+    app.nativeMessage({ type: 'update-status', status: 'unknown', currentVersion: '999.0.0', version: '999.0.0', message: 'ignored' });
+    assert.ok(node('update-current-version').textContent.includes('1.5.0'));
+    app.nativeMessage({ type: 'update-status', status: 'available', currentVersion: '1.5.0', version: '1.5.1-beta', message: '<img src=x onerror=alert(1)>' });
+    assert.equal(node('update-install').hidden, true);
+    assert.equal(node('update-status').querySelector('img'), null);
+    assert.ok(node('update-status').textContent.includes('<img'));
+    app.nativeMessage({ type: 'update-status', status: 'error', currentVersion: '1.5.2', message: 'Нет соединения. Попробуйте снова.' });
+    assert.equal(node('app-version').textContent, 'RG2 · Desktop 1.5.2');
+    assert.equal(node('update-check').disabled, false);
+    assert.equal(node('update-install').hidden, true);
+    node('update-check').click();
+    assert.equal(app.nativeMessages.at(-1).type, 'update-check');
+    app.nativeMessage({ type: 'update-status', status: 'up-to-date', currentVersion: '1.5.2', message: 'Обновление не требуется.' });
+    assert.equal(node('update-check').disabled, false);
+    assert.equal(node('update-status').textContent, 'Обновление не требуется.');
   } finally { app.dom.window.close(); }
 });

@@ -17,7 +17,17 @@ public partial class MainWindow : Window
     private static readonly string DataDirectory = ResolveDataDirectory();
     private static readonly string SettingsPath = Path.Combine(DataDirectory, "appearance.json");
     private string themePreference = "system";
+    private readonly ReleaseUpdater updater;
     private bool disposed;
+    private static readonly JsonSerializerOptions UpdateJsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static string CurrentAppVersion
+    {
+        get
+        {
+            Version version = typeof(MainWindow).Assembly.GetName().Version ?? new Version(1, 5, 0);
+            return $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
+        }
+    }
 
     private static string ResolveDataDirectory()
     {
@@ -33,6 +43,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        updater = new ReleaseUpdater(DataDirectory, CurrentAppVersion);
+        updater.StatusChanged += PostUpdateStatus;
         string iconPath = Path.Combine(AppContext.BaseDirectory, "data", "app-icon.png");
         if (File.Exists(iconPath)) Icon = BitmapFrame.Create(new Uri(iconPath));
         ReadAppearance();
@@ -42,6 +54,7 @@ public partial class MainWindow : Window
         Closed += (_, _) =>
         {
             disposed = true;
+            updater.Dispose();
             SystemEvents.UserPreferenceChanged -= SystemPreferencesChanged;
             Browser.Dispose();
         };
@@ -70,14 +83,26 @@ public partial class MainWindow : Window
             core.Settings.AreDefaultContextMenusEnabled = false;
             core.Settings.IsPasswordAutosaveEnabled = false;
             core.Settings.IsGeneralAutofillEnabled = false;
-            core.WebMessageReceived += (_, message) =>
+            core.WebMessageReceived += async (_, message) =>
             {
                 if (!IsLocalUri(message.Source)) return;
                 try
                 {
                     using JsonDocument json = JsonDocument.Parse(message.WebMessageAsJson);
                     JsonElement data = json.RootElement;
-                    if (!data.TryGetProperty("type", out JsonElement type) || type.GetString() != "theme") return;
+                    if (data.ValueKind != JsonValueKind.Object || !data.TryGetProperty("type", out JsonElement type) || type.ValueKind != JsonValueKind.String) return;
+                    string? command = type.GetString();
+                    if (command is "update-check" or "update-install" or "update-cancel")
+                    {
+                        if (!IsUpdateMessageSource(message.Source)) return;
+                        // Renderer messages choose an action only. All release URLs,
+                        // versions, staging paths and installer arguments are native.
+                        if (command == "update-check") await updater.CheckAsync();
+                        else if (command == "update-cancel") updater.Cancel();
+                        else if (await updater.InstallAsync() && !disposed) Application.Current.Shutdown();
+                        return;
+                    }
+                    if (command != "theme") return;
                     if (!data.TryGetProperty("preference", out JsonElement value)) return;
                     string? selected = value.GetString();
                     if (selected is not ("system" or "atelier" or "graphite")) return;
@@ -85,8 +110,9 @@ public partial class MainWindow : Window
                     SaveAppearance();
                     ApplyAppearance();
                 }
-                catch (JsonException) { /* Ignore invalid messages from imported content. */ }
+                catch (Exception error) when (error is JsonException or InvalidOperationException) { /* Ignore malformed renderer messages. */ }
             };
+            core.NavigationCompleted += (_, args) => { if (args.IsSuccess) PostUpdateStatus(updater.CurrentStatus); };
             ApplyAppearance();
 
             core.NavigationStarting += (_, args) =>
@@ -137,6 +163,20 @@ public partial class MainWindow : Window
         }
         catch (Exception exception) when (exception is IOException or JsonException or KeyNotFoundException) { }
     }
+
+    private void PostUpdateStatus(UpdateStatus status)
+    {
+        if (disposed) return;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (disposed || Browser.CoreWebView2 is not { } core) return;
+            core.PostWebMessageAsJson(JsonSerializer.Serialize(status, UpdateJsonOptions));
+        });
+    }
+
+    private static bool IsUpdateMessageSource(string value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out Uri? uri) && IsLocalUri(value) &&
+        uri.IsDefaultPort && uri.UserInfo.Length == 0 && uri.AbsolutePath == "/index.html";
 
     private void SaveAppearance()
     {

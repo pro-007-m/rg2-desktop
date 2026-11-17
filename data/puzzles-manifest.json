@@ -20,7 +20,7 @@
     },
     {
       "path": "LICENSE-RG2.md",
-      "sha256": "c0790321046d715c9a9362584867b569ca59b86effb70f36b292daa8dc370b9b"
+      "sha256": "a8e622952656e67d569a2698c782e2b1a3d2dfe5e5d8d20d2d4bb74554fb3e74"
     },
     {
       "path": "model.mjs",
@@ -96,7 +96,7 @@
     },
     {
       "path": "tool.mjs",
-      "sha256": "ebb556d995cc039ae30c744c3bab6e26ded3292deda3c3581c579737b0d612fc"
+      "sha256": "084922069bed8d478605058cad3330c53d5f6841d9029e069f2413356c10218a"
     },
     {
       "path": "vendor/cubing/alg/index.js",

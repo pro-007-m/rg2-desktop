@@ -20,7 +20,7 @@ public partial class App : Application
         applicationMutex = new Mutex(false, name, out bool created);
         if (!created)
         {
-            MessageBox.Show("RG2 уже запущена. Открой её окно на панели задач.", "RG2 Desktop", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("TwistForge уже запущен. Открой его окно на панели задач.", "TwistForge", MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown();
             return;
         }

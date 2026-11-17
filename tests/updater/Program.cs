@@ -23,6 +23,8 @@ static class Program
         var tests = new (string Name, Func<Task> Run)[] {
             ("strict release versions and comparisons", Versions),
             ("release origin, flags, assets and duplicate metadata", ReleaseValidation),
+            ("canonical branding and exact legacy update compatibility", BrandCompatibility),
+            ("review document envelope, UTF8 limits and safe names", ReviewFiles),
             ("checksum schema, hashes, sizes and path rejection", ManifestValidation),
             ("no automatic requests; explicit verified download; fixed unprivileged launch", ValidDownload),
             ("older and equal releases never become install plans", NoDowngrade),
@@ -69,6 +71,49 @@ static class Program
         { var json = Object(fixture.Latest); json["assets"]![0]!["digest"] = "sha1:" + new string('0', 40); Reject(() => ReleaseProtocol.ParseLatest(Bytes(json), Current), "Unsupported API digest accepted"); }
         string duplicate = Encoding.UTF8.GetString(fixture.Latest).Replace("\"draft\":false", "\"draft\":false,\"draft\":false");
         Reject(() => ReleaseProtocol.ParseLatest(Encoding.UTF8.GetBytes(duplicate), Current), "Duplicate JSON properties accepted");
+        return Task.CompletedTask;
+    }
+    static Task BrandCompatibility()
+    {
+        var fixture = new Fixture();
+        var legacy = Object(fixture.Latest);
+        foreach (JsonNode? asset in legacy["assets"]!.AsArray()) asset!["browser_download_url"] = asset["browser_download_url"]!.GetValue<string>().Replace("/twistforge-desktop/", "/rg2-desktop/");
+        Check(ReleaseProtocol.ParseLatest(Bytes(legacy), Current)!.Installer.Name == fixture.InstallerName, "Legacy channel must stay installable");
+        var canonical = Object(fixture.Latest);
+        foreach (JsonNode? asset in canonical["assets"]!.AsArray())
+        {
+            asset!["name"] = asset["name"]!.GetValue<string>().Replace("RG2-Desktop-", "TwistForge-Desktop-");
+            asset["browser_download_url"] = asset["browser_download_url"]!.GetValue<string>().Replace("RG2-Desktop-", "TwistForge-Desktop-");
+        }
+        string expectedName = "TwistForge-Desktop-1.5.1-Setup-x64.exe";
+        Check(ReleaseProtocol.ParseLatest(Bytes(canonical), Current)!.Installer.Name == expectedName, "Canonical assets rejected");
+        var both = canonical.DeepClone().AsObject();
+        foreach (JsonNode? asset in legacy["assets"]!.AsArray()) both["assets"]!.AsArray().Add(asset!.DeepClone());
+        Check(ReleaseProtocol.ParseLatest(Bytes(both), Current)!.Installer.Name == expectedName, "Canonical pair must take precedence");
+        var partial = both.DeepClone().AsObject(); partial["assets"]!.AsArray().RemoveAt(1);
+        Reject(() => ReleaseProtocol.ParseLatest(Bytes(partial), Current), "Partial canonical pair fell back to legacy pair");
+        var duplicate = both.DeepClone().AsObject(); duplicate["assets"]!.AsArray().Add(legacy["assets"]![0]!.DeepClone());
+        Reject(() => ReleaseProtocol.ParseLatest(Bytes(duplicate), Current), "Duplicate legacy alias was ignored");
+        foreach (string bad in new[] { "/pro-007-m/twistforge-desktop-evil/", "/other/twistforge-desktop/", "/pro-007-m/other/" })
+        {
+            var invalid = canonical.DeepClone().AsObject();
+            invalid["assets"]![0]!["browser_download_url"] = invalid["assets"]![0]!["browser_download_url"]!.GetValue<string>().Replace("/pro-007-m/twistforge-desktop/", bad);
+            Reject(() => ReleaseProtocol.ParseLatest(Bytes(invalid), Current), "Unexpected branded repository accepted");
+        }
+        Check(ReleaseProtocol.AllowedUri(ReleaseProtocol.LatestApi, true) && ReleaseProtocol.AllowedUri(ReleaseProtocol.LegacyLatestApi, true), "Exact canonical and legacy metadata endpoints required");
+        foreach (string url in new[] { ReleaseProtocol.LatestApi.AbsoluteUri + "?x=1", "https://api.github.com/repos/other/twistforge-desktop/releases/latest", "https://api.github.com/repos/pro-007-m/twistforge-mobile/releases/latest" })
+            Check(!ReleaseProtocol.AllowedUri(new Uri(url), true), "Metadata redirect allowlist broadened");
+        return Task.CompletedTask;
+    }
+    static Task ReviewFiles()
+    {
+        ReviewDocument.Validate("{\"schema\":\"twistforge-review\",\"version\":1,\"notes\":[]}");
+        foreach (string invalid in new[] { "[]", "{}", "{\"schema\":\"rg2-puzzle-game\",\"version\":1}", "{\"schema\":\"twistforge-review\",\"version\":\"1\"}", "{\"schema\":\"twistforge-review\",\"version\":2}", "{\"schema\":\"twistforge-review\",\"version\":1,\"version\":1}" })
+            Reject(() => ReviewDocument.Validate(invalid), "Invalid or cross-purpose review file accepted");
+        Reject(() => ReviewDocument.Validate("{\"schema\":\"twistforge-review\",\"version\":1,\"notes\":\"" + new string('я', ReviewDocument.MaxBytes / 2) + "\"}"), "Limit must count UTF8 bytes");
+        Check(ReviewDocument.FileName("TwistForge-Review-2026-11-17.json") == "TwistForge-Review-2026-11-17.json", "Safe review filename rejected");
+        foreach (string invalid in new[] { "../TwistForge-Review.json", "C:\\other\\TwistForge-Review.json", "TwistForge-Review.json.exe", "RG2-backup.json", "TwistForge-Review\n.json" })
+            Check(ReviewDocument.FileName(invalid) == "TwistForge-Review.json", "Review filename escaped chosen directory or used another format");
         return Task.CompletedTask;
     }
     static Task ManifestValidation()

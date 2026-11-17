@@ -1,11 +1,11 @@
 #ifndef AppVersion
-  #define AppVersion "1.6.0"
+  #define AppVersion "1.7.0"
 #endif
 #ifndef AppGuid
   #define AppGuid "8A0E0E87-2DC8-4E66-857F-E5881EAA379E"
 #endif
 #ifndef AppTitle
-  #define AppTitle "RG2 Desktop"
+  #define AppTitle "TwistForge"
 #endif
 #ifndef InstallRoot
   #define InstallRoot "{localappdata}\Programs\RG2 Desktop"
@@ -20,7 +20,7 @@
   #define AppMutexName "Local\RG2.Desktop.8A0E0E87-2DC8-4E66-857F-E5881EAA379E"
 #endif
 #ifndef OutputBase
-  #define OutputBase "RG2-Desktop-" + AppVersion + "-Setup-x64"
+  #define OutputBase "TwistForge-Desktop-" + AppVersion + "-Setup-x64"
 #endif
 #ifndef PayloadDir
   #error PayloadDir must point to a self-contained Windows x64 publish directory
@@ -37,10 +37,10 @@ AppId={{{#AppGuid}}
 AppName={#AppTitle}
 AppVersion={#AppVersion}
 AppVerName={#AppTitle} {#AppVersion}
-AppPublisher=RG2 Desktop
-AppPublisherURL=https://github.com/pro-007-m/rg2-desktop
-AppSupportURL=https://github.com/pro-007-m/rg2-desktop/issues
-AppUpdatesURL=https://github.com/pro-007-m/rg2-desktop/releases/latest
+AppPublisher=TwistForge
+AppPublisherURL=https://github.com/pro-007-m/twistforge-desktop
+AppSupportURL=https://github.com/pro-007-m/twistforge-desktop/issues
+AppUpdatesURL=https://github.com/pro-007-m/twistforge-desktop/releases/latest
 DefaultDirName={#InstallRoot}
 DefaultGroupName={#AppTitle}
 PrivilegesRequired=lowest
@@ -69,7 +69,7 @@ OutputDir={#ReleaseDir}
 OutputBaseFilename={#OutputBase}
 VersionInfoVersion={#AppVersion}
 VersionInfoProductName={#AppTitle}
-VersionInfoDescription=Установка и обновление RG2 Desktop
+VersionInfoDescription=Установка и обновление TwistForge
 Uninstallable=yes
 ChangesAssociations=no
 
@@ -93,6 +93,12 @@ Root: HKCU; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstallDir"; 
 [Icons]
 Name: "{userprograms}\{#AppTitle}"; Filename: "{app}\RG2.Desktop.exe"; WorkingDir: "{app}"
 Name: "{userdesktop}\{#AppTitle}"; Filename: "{app}\RG2.Desktop.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+
+#if AppGuid == "8A0E0E87-2DC8-4E66-857F-E5881EAA379E"
+[InstallDelete]
+Type: files; Name: "{userprograms}\RG2 Desktop.lnk"
+Type: files; Name: "{userdesktop}\RG2 Desktop.lnk"
+#endif
 
 [Run]
 Filename: "{app}\RG2.Desktop.exe"; Description: "Запустить {#AppTitle}"; Flags: nowait postinstall skipifsilent
@@ -209,7 +215,7 @@ begin
     SuppressibleMsgBox('Папка установки содержит ссылку на другую папку. Установка остановлена, чтобы сохранить остальные файлы.', mbError, MB_OK, IDOK); Exit;
   end;
   if NewerVersionInstalled then begin
-    SuppressibleMsgBox('Уже установлена более новая версия RG2. Этот установщик не будет её заменять.', mbInformation, MB_OK, IDOK); Exit;
+    SuppressibleMsgBox('Уже установлена более новая версия TwistForge. Этот установщик не будет её заменять.', mbInformation, MB_OK, IDOK); Exit;
   end;
   Result := True;
 end;
@@ -226,9 +232,9 @@ var Code: Integer;
 begin
   Result := '';
   if not SafeInstallRoot(WizardDirValue) then begin Result := 'Недопустимая папка установки.'; Exit; end;
-  if NewerVersionInstalled then begin Result := 'Уже установлена более новая версия RG2.'; Exit; end;
+  if NewerVersionInstalled then begin Result := 'Уже установлена более новая версия TwistForge.'; Exit; end;
 #if AppGuid == "8A0E0E87-2DC8-4E66-857F-E5881EAA379E"
-  if FindWindowByWindowName('RG2 · Desktop') <> 0 then begin Result := 'Закрой запущенную RG2, затем нажми «Повторить». Настройки и результаты сохранятся.'; Exit; end;
+  if (FindWindowByWindowName('RG2 · Desktop') <> 0) or (FindWindowByWindowName('TwistForge') <> 0) then begin Result := 'Закрой запущенный TwistForge, затем нажми «Повторить». Настройки и результаты сохранятся.'; Exit; end;
 #endif
   if not WebViewAvailable then begin
     WizardForm.StatusLabel.Caption := 'Устанавливается Microsoft WebView2…';
@@ -236,7 +242,7 @@ begin
     if not Exec(ExpandConstant('{tmp}\MicrosoftEdgeWebView2RuntimeInstallerX64.exe'), '/silent /install', '', SW_HIDE, ewWaitUntilTerminated, Code) then begin
       Result := 'Не удалось запустить установку Microsoft WebView2. Повтори запуск установщика.'; Exit;
     end;
-    if not WebViewAvailable then Result := 'Microsoft WebView2 не установлен (код ' + IntToStr(Code) + '). Установка RG2 остановлена; повтори запуск установщика.';
+    if not WebViewAvailable then Result := 'Microsoft WebView2 не установлен (код ' + IntToStr(Code) + '). Установка TwistForge остановлена; повтори запуск установщика.';
   end;
 end;
 
@@ -249,10 +255,10 @@ begin
     Form.Position := poScreenCenter;
     Info := TNewStaticText.Create(Form); Info.Parent := Form;
     Info.Left := ScaleX(20); Info.Top := ScaleY(18); Info.Width := ScaleX(440); Info.Height := ScaleY(65);
-    Info.WordWrap := True; Info.Caption := 'Программа, библиотека и ярлыки будут удалены. Выбери, нужно ли также удалить настройки, избранное, раскраски куба, результаты и загруженные обновления.';
+    Info.WordWrap := True; Info.Caption := 'Программа, библиотека и ярлыки будут удалены. Выбери, нужно ли также удалить настройки, избранное, раскраски куба, результаты, черновики правок и загруженные обновления.';
     Check := TNewCheckBox.Create(Form); Check.Parent := Form;
     Check.Left := ScaleX(20); Check.Top := ScaleY(92); Check.Width := ScaleX(440); Check.Height := ScaleY(35);
-    Check.Caption := 'Удалить все личные данные RG2'; Check.Checked := False;
+    Check.Caption := 'Удалить все личные данные TwistForge'; Check.Checked := False;
     RemoveButton := TNewButton.Create(Form); RemoveButton.Parent := Form;
     RemoveButton.Left := ScaleX(190); RemoveButton.Top := ScaleY(163); RemoveButton.Width := ScaleX(170); RemoveButton.Caption := 'Удалить программу'; RemoveButton.ModalResult := mrOk; RemoveButton.Default := True;
     CancelButton := TNewButton.Create(Form); CancelButton.Parent := Form;
@@ -266,12 +272,12 @@ function InitializeUninstall: Boolean;
 begin
   Result := False;
   if not SafeInstallRoot(ExpandConstant('{app}')) then begin
-    SuppressibleMsgBox('Папка RG2 содержит ссылку на другую папку. Удаление остановлено, чтобы сохранить остальные файлы.', mbError, MB_OK, IDOK); Exit;
+    SuppressibleMsgBox('Папка TwistForge содержит ссылку на другую папку. Удаление остановлено, чтобы сохранить остальные файлы.', mbError, MB_OK, IDOK); Exit;
   end;
   PurgeProfile := ExpandConstant('{param:PURGEDATA|0}') = '1';
 #if AppGuid == "8A0E0E87-2DC8-4E66-857F-E5881EAA379E"
-  if FindWindowByWindowName('RG2 · Desktop') <> 0 then begin
-    SuppressibleMsgBox('Сначала закрой запущенную RG2, затем повтори удаление.', mbInformation, MB_OK, IDOK); Exit;
+  if (FindWindowByWindowName('RG2 · Desktop') <> 0) or (FindWindowByWindowName('TwistForge') <> 0) then begin
+    SuppressibleMsgBox('Сначала закрой запущенный TwistForge, затем повтори удаление.', mbInformation, MB_OK, IDOK); Exit;
   end;
 #endif
   if not UninstallSilent then begin Result := ChooseUninstallOptions; Exit; end;
@@ -293,5 +299,5 @@ begin
     Removed := DelTree(Profile, True, True, True);
     if not Removed then Sleep(250);
   end;
-  if not Removed then SuppressibleMsgBox('Программа удалена, но часть личных данных занята другим процессом. Закрой окна RG2 и удали папку ' + Profile + '.', mbInformation, MB_OK, IDOK);
+  if not Removed then SuppressibleMsgBox('Программа удалена, но часть личных данных занята другим процессом. Закрой окна TwistForge и удали папку ' + Profile + '.', mbInformation, MB_OK, IDOK);
 end;

@@ -9,7 +9,7 @@ The virtual-puzzle solver uses the unmodified local JavaScript distribution of *
 
 The complete distributed JavaScript files, upstream README, MPL/GPL texts, source revision, npm integrity and per-file hashes are retained in `data/puzzles/vendor/cubing/`. Upstream source: <https://github.com/cubing/cubing.js/tree/8544249ff1e662557df912065a26b5f90f4df574>. Component notices in the JavaScript distribution remain intact. The app uses the library locally; it does not use its Bluetooth services.
 
-The stabilizer-group puzzle solver adapter and its own geometric/permutation conversion are separate RG2 modules. Reused upstream group data remains covered by the original component's notices.
+The stabilizer-group puzzle solver adapter and its own geometric/permutation conversion are separate TwistForge modules. Reused upstream group data remains covered by the original component's notices.
 
 ## Three.js
 

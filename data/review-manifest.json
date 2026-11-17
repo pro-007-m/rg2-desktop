@@ -1,0 +1,30 @@
+{
+  "schema": "twistforge-shared-review",
+  "version": 1,
+  "files": [
+    {
+      "path": "boot.mjs",
+      "sha256": "969ff1e53a1952fd75ecd88eb73270a2f2389120538bc84b9fc83a70a2541531"
+    },
+    {
+      "path": "model.mjs",
+      "sha256": "a49b9ac1d03c33e13cdf4991e9552a3bf275d0de5ceb11703fa975c1427f6abe"
+    },
+    {
+      "path": "preview.mjs",
+      "sha256": "a286d53352b5ac523d94bced22755e5b7760aed576fcc0fd8bf695095a96b208"
+    },
+    {
+      "path": "ui.mjs",
+      "sha256": "a74df88a8c67036ae9b6493f5c6aca266fdc0dfd50d79b062e84c58f1b48b0ff"
+    },
+    {
+      "path": "unlock.mjs",
+      "sha256": "ee5f0de778f6bbaf0ef56163c8c5ec955c5a5c2945dd46281b6a5edaa970de42"
+    },
+    {
+      "path": "view.css",
+      "sha256": "b40304a4614386412fa3aa07c5f31a64c6f5dcce038911c4081a65676eeaef45"
+    }
+  ]
+}

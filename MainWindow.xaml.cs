@@ -19,13 +19,13 @@ public partial class MainWindow : Window
     private string themePreference = "system";
     private readonly ReleaseUpdater updater;
     private bool disposed;
-    private bool puzzleDocumentOpen;
+    private bool documentPickerOpen;
     private static readonly JsonSerializerOptions UpdateJsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private static string CurrentAppVersion
     {
         get
         {
-            Version version = typeof(MainWindow).Assembly.GetName().Version ?? new Version(1, 6, 0);
+            Version version = typeof(MainWindow).Assembly.GetName().Version ?? new Version(1, 7, 0);
             return $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
         }
     }
@@ -93,7 +93,7 @@ public partial class MainWindow : Window
                     JsonElement data = json.RootElement;
                     if (data.ValueKind != JsonValueKind.Object || !data.TryGetProperty("type", out JsonElement type) || type.ValueKind != JsonValueKind.String) return;
                     string? command = type.GetString();
-                    if (command is "puzzle-focus" or "export-puzzle" or "import-puzzle")
+                    if (command is "puzzle-focus" or "export-puzzle" or "import-puzzle" or "export-review" or "import-review")
                     {
                         if (!IsUpdateMessageSource(message.Source)) return;
                         if (command == "puzzle-focus")
@@ -101,6 +101,7 @@ public partial class MainWindow : Window
                             if (data.TryGetProperty("enabled", out JsonElement enabled) && enabled.ValueKind is JsonValueKind.True or JsonValueKind.False)
                                 core.Settings.AreBrowserAcceleratorKeysEnabled = !enabled.GetBoolean();
                         }
+                        else if (command is "export-review" or "import-review") await ReviewDocumentAsync(command, data);
                         else await PuzzleDocumentAsync(command, data);
                         return;
                     }
@@ -160,7 +161,7 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             MessageBox.Show(this, "Не удалось открыть приложение.\n\n" + exception.Message,
-                "RG2 · Desktop", MessageBoxButton.OK, MessageBoxImage.Error);
+                "TwistForge", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -192,8 +193,8 @@ public partial class MainWindow : Window
 
     private async Task PuzzleDocumentAsync(string command, JsonElement data)
     {
-        if (puzzleDocumentOpen) return;
-        puzzleDocumentOpen = true;
+        if (documentPickerOpen) return;
+        documentPickerOpen = true;
         try
         {
             if (command == "export-puzzle")
@@ -203,9 +204,9 @@ public partial class MainWindow : Window
                 if (System.Text.Encoding.UTF8.GetByteCount(text) > 8 * 1024 * 1024) throw new IOException("Файл партии больше 8 МБ.");
                 using JsonDocument game = JsonDocument.Parse(text);
                 if (!game.RootElement.TryGetProperty("schema", out JsonElement schema) || schema.GetString() != "rg2-puzzle-game") return;
-                string name = data.TryGetProperty("name", out JsonElement proposed) && proposed.ValueKind == JsonValueKind.String ? Path.GetFileName(proposed.GetString() ?? "RG2-puzzle.json") : "RG2-puzzle.json";
-                if (string.IsNullOrWhiteSpace(name) || !name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) name = "RG2-puzzle.json";
-                SaveFileDialog dialog = new() { Title = "Сохранить партию RG2", Filter = "Партия RG2 (*.json)|*.json", DefaultExt = ".json", FileName = name, AddExtension = true };
+                string name = data.TryGetProperty("name", out JsonElement proposed) && proposed.ValueKind == JsonValueKind.String ? Path.GetFileName(proposed.GetString() ?? "TwistForge-puzzle.json") : "TwistForge-puzzle.json";
+                if (string.IsNullOrWhiteSpace(name) || !name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) name = "TwistForge-puzzle.json";
+                SaveFileDialog dialog = new() { Title = "Сохранить партию TwistForge", Filter = "Партия TwistForge (*.json)|*.json", DefaultExt = ".json", FileName = name, AddExtension = true };
                 if (dialog.ShowDialog(this) == true)
                 {
                     await File.WriteAllTextAsync(dialog.FileName, text);
@@ -214,7 +215,7 @@ public partial class MainWindow : Window
             }
             else
             {
-                OpenFileDialog dialog = new() { Title = "Открыть партию RG2", Filter = "Партия RG2 (*.json)|*.json|Все файлы (*.*)|*.*", Multiselect = false };
+                OpenFileDialog dialog = new() { Title = "Открыть партию TwistForge", Filter = "Партия TwistForge (*.json)|*.json|Все файлы (*.*)|*.*", Multiselect = false };
                 if (dialog.ShowDialog(this) != true) return;
                 if (new FileInfo(dialog.FileName).Length > 8 * 1024 * 1024) throw new IOException("Файл партии больше 8 МБ.");
                 string text = await File.ReadAllTextAsync(dialog.FileName);
@@ -227,7 +228,51 @@ public partial class MainWindow : Window
         {
             await PuzzleToastAsync(error is JsonException ? "Не удалось прочитать JSON-партию." : "Не удалось открыть или сохранить файл партии.");
         }
-        finally { puzzleDocumentOpen = false; }
+        finally { documentPickerOpen = false; }
+    }
+
+    private async Task ReviewDocumentAsync(string command, JsonElement data)
+    {
+        if (documentPickerOpen) return;
+        documentPickerOpen = true;
+        try
+        {
+            if (command == "export-review")
+            {
+                if (!data.TryGetProperty("text", out JsonElement element) || element.ValueKind != JsonValueKind.String) return;
+                string text = element.GetString() ?? "";
+                ReviewDocument.Validate(text);
+                string? proposed = data.TryGetProperty("name", out JsonElement name) && name.ValueKind == JsonValueKind.String ? name.GetString() : null;
+                SaveFileDialog dialog = new() { Title = "Сохранить все пометки TwistForge", Filter = "Пометки TwistForge (*.json)|*.json", DefaultExt = ".json", FileName = ReviewDocument.FileName(proposed), AddExtension = true };
+                if (dialog.ShowDialog(this) != true) return;
+                await File.WriteAllTextAsync(dialog.FileName, text, new System.Text.UTF8Encoding(false));
+                await PuzzleToastAsync("Все пометки сохранены одним файлом.");
+            }
+            else
+            {
+                OpenFileDialog dialog = new() { Title = "Открыть пометки TwistForge", Filter = "Пометки TwistForge (*.json)|*.json", Multiselect = false };
+                if (dialog.ShowDialog(this) != true) return;
+                // Limit the actual read too: a selected file can change after the size check.
+                await using FileStream stream = new(dialog.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, 16384, FileOptions.Asynchronous);
+                if (stream.Length > ReviewDocument.MaxBytes) throw new InvalidDataException("Review file exceeds 8 MiB.");
+                using var bytes = new MemoryStream();
+                byte[] block = new byte[16384];
+                int count;
+                while ((count = await stream.ReadAsync(block)) != 0)
+                {
+                    if (bytes.Length + count > ReviewDocument.MaxBytes) throw new InvalidDataException("Review file exceeds 8 MiB.");
+                    await bytes.WriteAsync(block.AsMemory(0, count));
+                }
+                string text = new System.Text.UTF8Encoding(false, true).GetString(bytes.ToArray()).TrimStart('\uFEFF');
+                ReviewDocument.Validate(text);
+                if (!disposed) await Browser.CoreWebView2.ExecuteScriptAsync("window.TwistForgeReview?.receiveImport(" + JsonSerializer.Serialize(text) + ")");
+            }
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or System.Text.DecoderFallbackException)
+        {
+            await PuzzleToastAsync("Не удалось открыть или сохранить пометки. Нужен файл TwistForge JSON до 8 МБ.");
+        }
+        finally { documentPickerOpen = false; }
     }
 
     private async Task PuzzleToastAsync(string text)

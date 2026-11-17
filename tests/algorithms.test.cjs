@@ -381,3 +381,9 @@ test('saved focus follows an exact formula when its index changes and ignores st
     assertFocused(stale.window.document.querySelector('#article-body'), null);
   } finally { stale.dom.window.close(); }
 });
+
+test('explicit review choices override algorithm heuristics without duplicate controls',()=>{
+ const root=article(`<p><span data-review-kind="text">R U R' U'</span> <span data-review-kind="algorithm" data-review-note-id="n1">R</span></p>`);
+ algorithms.prepare(root);assert.equal(blocks(root).length,1);assert.equal(blocks(root)[0].querySelector('.algorithm-code').textContent,'R');assert.equal(blocks(root)[0].dataset.reviewNoteId,'n1');
+ algorithms.prepare(root);assert.equal(blocks(root).length,1);assert.equal(root.querySelector('[data-review-kind="text"]').textContent,"R U R' U'");
+});

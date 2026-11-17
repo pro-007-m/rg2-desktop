@@ -5,5 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup><Compile Include="../../ReleaseUpdater.cs" Link="ReleaseUpdater.cs" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../ReleaseUpdater.cs" Link="ReleaseUpdater.cs" />
+    <Compile Include="../../ReviewDocument.cs" Link="ReviewDocument.cs" />
+  </ItemGroup>
 </Project>

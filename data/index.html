@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'">
-  <title>RG2 · Desktop</title>
+  <title>TwistForge · Desktop</title>
   <link rel="icon" type="image/png" href="app-icon.png">
   <script>try{const p=localStorage.getItem('rg2.theme')||'system';document.documentElement.dataset.theme=p==='system'?(matchMedia('(prefers-color-scheme:dark)').matches?'graphite':'atelier'):p;}catch(e){}</script>
   <link rel="stylesheet" href="styles.css">
@@ -12,13 +12,14 @@
   <script src="tools.js" defer></script>
   <script src="algorithms.js" defer></script>
   <script src="app.js" defer></script>
+  <script type="module" src="review/boot.mjs"></script>
 </head>
 <body>
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#" data-home aria-label="RG2 — главная">
+      <a class="brand" href="#" data-home aria-label="TwistForge — главная">
         <img class="brand-mark" src="app-icon.png" alt="">
-        <span><strong>RG2</strong><small>CUBE LIBRARY</small></span>
+        <span><strong>TwistForge</strong><small>PUZZLE WORKSHOP</small></span>
       </a>
       <div class="nav-label">ОБУЧАЛКИ</div>
       <nav class="primary-nav" id="category-nav" aria-label="Головоломки"></nav>
@@ -26,7 +27,7 @@
       <nav class="primary-nav" id="utility-nav" aria-label="Дополнительно"></nav>
       <div class="sidebar-bottom">
         <button class="nav-button" id="settings-button" type="button"><svg><use href="#i-settings"/></svg><span>Настройки</span></button>
-        <div class="sidebar-signature"><i></i><span>RG2 · DESKTOP</span></div>
+        <div class="sidebar-signature"><i></i><span>TWISTFORGE · DESKTOP</span></div>
       </div>
     </aside>
     <main class="workspace" id="workspace">

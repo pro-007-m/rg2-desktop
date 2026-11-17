@@ -9,3 +9,5 @@ data/assets/** binary
 # Shared hashes and pinned upstream snapshots must keep their exact bytes.
 data/puzzles/** -text whitespace=cr-at-eol
 data/puzzles/vendor/** whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof,-space-before-tab
+
+data/review/** -text

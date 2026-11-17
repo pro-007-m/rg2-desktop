@@ -39,8 +39,9 @@ internal sealed record UpdateStatus(string Status, string CurrentVersion, string
 
 internal static class ReleaseProtocol
 {
-    internal const string RepositoryUrl = "https://github.com/pro-007-m/rg2-desktop";
-    internal static readonly Uri LatestApi = new("https://api.github.com/repos/pro-007-m/rg2-desktop/releases/latest");
+    internal const string RepositoryUrl = "https://github.com/pro-007-m/twistforge-desktop";
+    internal static readonly Uri LatestApi = new("https://api.github.com/repos/pro-007-m/twistforge-desktop/releases/latest");
+    internal static readonly Uri LegacyLatestApi = new("https://api.github.com/repos/pro-007-m/rg2-desktop/releases/latest");
     internal const long MaxInstallerBytes = 2L * 1024 * 1024 * 1024;
     internal const int MaxManifestBytes = 1024 * 1024;
     private static readonly HashSet<string> DownloadHosts = new(StringComparer.OrdinalIgnoreCase)
@@ -49,7 +50,7 @@ internal static class ReleaseProtocol
     internal static bool AllowedUri(Uri uri, bool metadata)
     {
         if (!uri.IsAbsoluteUri || uri.Scheme != Uri.UriSchemeHttps || !uri.IsDefaultPort || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0) return false;
-        return metadata ? uri.AbsoluteUri == LatestApi.AbsoluteUri : DownloadHosts.Contains(uri.IdnHost);
+        return metadata ? uri.AbsoluteUri == LatestApi.AbsoluteUri || uri.AbsoluteUri == LegacyLatestApi.AbsoluteUri : DownloadHosts.Contains(uri.IdnHost);
     }
 
     internal static ReleaseCandidate? ParseLatest(byte[] json, ReleaseVersion current)
@@ -60,18 +61,20 @@ internal static class ReleaseProtocol
         string tag = RequiredString(root, "tag_name");
         if (!ReleaseVersion.TryParse(tag, out ReleaseVersion version)) throw new InvalidDataException("Invalid release version.");
         if (version.CompareTo(current) <= 0) return null;
-        string installerName = $"RG2-Desktop-{version}-Setup-x64.exe", checksumName = $"RG2-Desktop-{version}-checksums.json";
+        string installerName = $"TwistForge-Desktop-{version}-Setup-x64.exe", checksumName = $"TwistForge-Desktop-{version}-checksums.json";
+        string legacyInstallerName = $"RG2-Desktop-{version}-Setup-x64.exe", legacyChecksumName = $"RG2-Desktop-{version}-checksums.json";
         if (!root.TryGetProperty("assets", out JsonElement assets) || assets.ValueKind != JsonValueKind.Array) throw new InvalidDataException("Missing release assets.");
-        ReleaseAsset? installer = null, checksums = null;
+        var selected = new Dictionary<string, ReleaseAsset>(StringComparer.Ordinal);
         foreach (JsonElement asset in assets.EnumerateArray())
         {
             if (asset.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Invalid asset record.");
             string name = RequiredString(asset, "name");
-            if (name != installerName && name != checksumName) continue;
+            if (name != installerName && name != checksumName && name != legacyInstallerName && name != legacyChecksumName) continue;
             if (asset.TryGetProperty("state", out JsonElement uploaded) && (uploaded.ValueKind != JsonValueKind.String || uploaded.GetString() != "uploaded")) throw new InvalidDataException("Asset upload is incomplete.");
-            long bytes = RequiredBytes(asset, "size", name == checksumName ? MaxManifestBytes : MaxInstallerBytes);
+            long bytes = RequiredBytes(asset, "size", name == checksumName || name == legacyChecksumName ? MaxManifestBytes : MaxInstallerBytes);
             string download = RequiredString(asset, "browser_download_url");
-            if (!Uri.TryCreate(download, UriKind.Absolute, out Uri? uri) || !AllowedUri(uri, false) || uri.IdnHost != "github.com" || uri.Query.Length != 0 || uri.AbsolutePath != $"/pro-007-m/rg2-desktop/releases/download/{tag}/{name}") throw new InvalidDataException("Unexpected asset origin or path.");
+            if (!Uri.TryCreate(download, UriKind.Absolute, out Uri? uri) || !AllowedUri(uri, false) || uri.IdnHost != "github.com" || uri.Query.Length != 0 ||
+                (uri.AbsolutePath != $"/pro-007-m/twistforge-desktop/releases/download/{tag}/{name}" && uri.AbsolutePath != $"/pro-007-m/rg2-desktop/releases/download/{tag}/{name}")) throw new InvalidDataException("Unexpected asset origin or path.");
             string? digest = null;
             if (asset.TryGetProperty("digest", out JsonElement apiDigest) && apiDigest.ValueKind != JsonValueKind.Null)
             {
@@ -79,10 +82,14 @@ internal static class ReleaseProtocol
                 digest = apiDigest.GetString()![7..].ToLowerInvariant();
             }
             var parsed = new ReleaseAsset(name, uri, bytes, digest);
-            if (name == installerName) { if (installer is not null) throw new InvalidDataException("Duplicate installer asset."); installer = parsed; }
-            else { if (checksums is not null) throw new InvalidDataException("Duplicate checksum asset."); checksums = parsed; }
+            if (!selected.TryAdd(name, parsed)) throw new InvalidDataException("Duplicate release asset.");
         }
-        return new(version, tag, installer ?? throw new InvalidDataException("Installer asset is missing."), checksums ?? throw new InvalidDataException("Checksum asset is missing."));
+        // A partial canonical pair is an invalid release, never an invitation to
+        // mix a new installer with a legacy checksum manifest.
+        bool canonical = selected.ContainsKey(installerName) || selected.ContainsKey(checksumName);
+        string wantedInstaller = canonical ? installerName : legacyInstallerName, wantedChecksums = canonical ? checksumName : legacyChecksumName;
+        if (!selected.TryGetValue(wantedInstaller, out ReleaseAsset? installer) || !selected.TryGetValue(wantedChecksums, out ReleaseAsset? checksums)) throw new InvalidDataException("Installer or checksum asset is missing.");
+        return new(version, tag, installer, checksums);
     }
 
     internal static ReleasePlan ParseChecksums(byte[] json, ReleaseCandidate release)
@@ -260,7 +267,7 @@ internal sealed class ReleaseUpdater : IDisposable
         {
             if (!ReleaseProtocol.AllowedUri(uri, metadata)) throw new InvalidDataException("Untrusted update URL.");
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            request.Headers.UserAgent.ParseAdd("RG2.Desktop/" + current);
+            request.Headers.UserAgent.ParseAdd("TwistForge.Desktop/" + current);
             request.Headers.Accept.ParseAdd(metadata ? "application/vnd.github+json" : "application/octet-stream");
             if (metadata) request.Headers.Add("X-GitHub-Api-Version", "2026-03-10");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);

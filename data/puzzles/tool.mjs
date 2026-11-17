@@ -181,10 +181,10 @@ export function mount(container,{initialSpec=null,initialState=null,onOpenSolver
       else if(name==='old-solver'){game.stop();await persist();localStorage.setItem('rg2.cfop.input',JSON.stringify([...game.state]));onOpenSolver?.();}
       else if(name==='export'){
         game.stop();const text=JSON.stringify(game.toJSON(),null,2);await persist();
-        if(!nativePost('export-puzzle',{text,name:`RG2-${game.spec.kind}-${game.spec.size}.json`})){
-          const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=`RG2-${game.spec.kind}-${game.spec.size}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+        if(!nativePost('export-puzzle',{text,name:`TwistForge-${game.spec.kind}-${game.spec.size}.json`})){
+          const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=`TwistForge-${game.spec.kind}-${game.spec.size}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
         }
-        message('Файл партии готов. Его можно открыть в RG2 на другом устройстве.');
+        message('Файл партии готов. Его можно открыть в TwistForge на другом устройстве.');
       }else if(name==='import'){
         if(!nativePost('import-puzzle'))$('[data-role=file]').click();
       }else if(name==='saved')await showSaved();

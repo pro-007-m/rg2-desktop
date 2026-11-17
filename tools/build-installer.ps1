@@ -21,7 +21,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot identify Git revision.' }
 $dirty = & git @gitArgs status --porcelain
 if ($dirty -and !$AllowDirty) { throw 'Commit the release before building: executable, source archive and installer must identify one revision.' }
 $sourceRevision = if ($dirty) { $revision+'-local' } else { $revision }
-$publishRoot = Join-Path $releaseRoot ('RG2-Desktop-'+$version)
+$publishRoot = Join-Path $releaseRoot ('TwistForge-Desktop-'+$version)
 New-Item -ItemType Directory -Path $releaseRoot -Force | Out-Null
 Push-Location $repoRoot
 $sdkEnvironment = @{
@@ -49,7 +49,7 @@ try {
 if (!(Test-Path -LiteralPath (Join-Path $publishRoot 'coreclr.dll'))) { throw 'The publish output is not self-contained.' }
 $files = [Collections.Generic.List[object]]::new()
 if (!$dirty) {
-    $sourceZip = Join-Path $releaseRoot ('RG2-Desktop-'+$version+'-Source.zip')
+    $sourceZip = Join-Path $releaseRoot ('TwistForge-Desktop-'+$version+'-Source.zip')
     & git @gitArgs archive --format=zip -o $sourceZip HEAD
     if ($LASTEXITCODE -ne 0) { throw 'Source archive failed.' }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -73,9 +73,32 @@ if (!$dirty) {
 }
 & $compilerPath ('/DAppVersion='+$version) ('/DPayloadDir='+$publishRoot) ('/DWebViewInstaller='+$webViewPath) ('/DReleaseDir='+$releaseRoot) (Join-Path $repoRoot 'installer/RG2.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
-$setup = Get-Item -LiteralPath (Join-Path $releaseRoot ('RG2-Desktop-'+$version+'-Setup-x64.exe'))
+$setup = Get-Item -LiteralPath (Join-Path $releaseRoot ('TwistForge-Desktop-'+$version+'-Setup-x64.exe'))
 $files.Insert(0,$setup)
 $records = @($files | ForEach-Object { @{name=$_.Name;bytes=$_.Length;sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()} })
 $manifest = @{version=$version;commit=$sourceRevision;files=$records}
-$manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $releaseRoot ('RG2-Desktop-'+$version+'-checksums.json')) -Encoding utf8
+$manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $releaseRoot ('TwistForge-Desktop-'+$version+'-checksums.json')) -Encoding utf8
+# Installed RG2 1.6 clients pin the legacy repository and exact asset names.
+# Publish these aliases only on that compatibility channel; the program bytes,
+# source revision, installation identity and profile are exactly the same.
+$legacyRecords = @($files | ForEach-Object {
+    $canonical = $_
+    $legacyName = $canonical.Name -replace '^TwistForge-Desktop-', 'RG2-Desktop-'
+    $legacyPath = Join-Path $releaseRoot $legacyName
+    $expectedHash = (Get-FileHash -LiteralPath $canonical.FullName -Algorithm SHA256).Hash
+    if (Test-Path -LiteralPath $legacyPath) {
+        if ((Get-FileHash -LiteralPath $legacyPath -Algorithm SHA256).Hash -ne $expectedHash) {
+            throw ('Existing compatibility asset has different bytes: '+$legacyName)
+        }
+    } else {
+        Copy-Item -LiteralPath $canonical.FullName -Destination $legacyPath
+    }
+    $legacy = Get-Item -LiteralPath $legacyPath
+    if ($legacy.Length -ne $canonical.Length -or (Get-FileHash -LiteralPath $legacyPath -Algorithm SHA256).Hash -ne $expectedHash) {
+        throw ('Compatibility asset verification failed: '+$legacyName)
+    }
+    @{name=$legacyName;bytes=$legacy.Length;sha256=$expectedHash.ToLowerInvariant()}
+})
+@{version=$version;commit=$sourceRevision;files=$legacyRecords} | ConvertTo-Json -Depth 5 |
+    Set-Content -LiteralPath (Join-Path $releaseRoot ('RG2-Desktop-'+$version+'-checksums.json')) -Encoding utf8
 Write-Output ($manifest | ConvertTo-Json -Depth 5)

@@ -133,7 +133,7 @@
     function visit(node){
       if(node.nodeType===3){current.push(node);return;}
       if(node.nodeType!==1)return;
-      if(node.classList.contains('algorithm-block') || protectedTags.has(node.tagName)){flush();return;}
+      if(node.classList.contains('algorithm-block') || node.dataset.reviewKind==='text' || protectedTags.has(node.tagName)){flush();return;}
       if(node.tagName==='BR' || node.tagName==='HR'){flush();return;}
       const block=blocks.has(node.tagName);
       if(block)flush();
@@ -168,11 +168,19 @@
     if(!container || !container.ownerDocument)return [];
     options=options || {};
     const document=container.ownerDocument;
+    // Curated review decisions take precedence over heuristic move detection.
+    for(const marked of [...container.querySelectorAll('[data-review-kind="algorithm"]')]){
+      if(marked.classList.contains('algorithm-block') || marked.closest('[data-review-kind="text"]'))continue;
+      const formula=marked.textContent,block=makeBlock(document,formula,options);
+      block.dataset.reviewKind='algorithm';
+      for(const key of ['reviewNoteId','reviewRecordId','reviewPreferred'])if(marked.dataset[key])block.dataset[key]=marked.dataset[key];
+      marked.replaceWith(block);
+    }
     // Original video links can include prose before or after a formula. Keep the
     // same link around its moves, retaining the surrounding words in their exact
     // order outside the block and the independent buttons outside the anchor.
     for(const anchor of [...container.querySelectorAll('a')]){
-      if(anchor.closest('.algorithm-block') || anchor.querySelector('img'))continue;
+      if(anchor.closest('.algorithm-block,[data-review-kind="text"]') || anchor.querySelector('img,[data-review-kind="text"],[data-review-kind="algorithm"]'))continue;
       const parts=splitAlgorithms(anchor.textContent,{minMoves:2});
       const formulas=parts.filter(part=>part.type==='algorithm');
       if(formulas.length!==1)continue;

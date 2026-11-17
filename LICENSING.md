@@ -1,6 +1,6 @@
-# Licensing of RG2 program code
+# Licensing of TwistForge program code
 
-The original RG2 Desktop and RG2 Mobile program code in this repository is distributed under GNU General Public License version 3 only (GPL-3.0-only). Copyright (C) 2026 RG2 contributors.
+The original TwistForge Desktop and TwistForge Mobile program code (formerly RG2 Desktop and RG2 Mobile) in this repository is distributed under GNU General Public License version 3 only (GPL-3.0-only). Copyright (C) 2026 RG2 and TwistForge contributors.
 
 You may copy, modify and redistribute the covered program code under that licence. The program is provided without warranty; see LICENSE for the complete terms.
 
@@ -10,7 +10,9 @@ The imported RG2F lesson texts, diagrams, photographs, catalog records and other
 
 Complete source for each released program is provided alongside its binary release and in the corresponding public Git revision:
 
-- https://github.com/pro-007-m/rg2-desktop
-- https://github.com/pro-007-m/rg2-mobile
+- https://github.com/pro-007-m/twistforge-desktop
+- https://github.com/pro-007-m/twistforge-mobile
+
+The previous `rg2-desktop` and `rg2-mobile` repositories retain release history and compatibility channels. The application rename does not change imported-material provenance or component copyright notices.
 
 The GPL text is also included offline in data/puzzles/COPYING.txt. The RCube adaptation includes its executable source, pinned original C++ snapshot and reproducible adaptation script. No private signing keys are needed to build a personal copy; Android updates to an existing installation require the same signing identity.

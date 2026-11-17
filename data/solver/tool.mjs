@@ -13,7 +13,8 @@ export function mount(container){
  let state=Uint8Array.from(initial),frameCenters=[],scrambleRecord=restoreScramble(read(SCRAMBLE_KEY,null),initial),lastRandomMoves=scrambleRecord?.moves;
  let trace=createTrace(),segmentSerial=0;
  const segmentChoices=new Map();
- const view=createSolverView(container,{onInputChange,onSolve:solve,onRandom:newScramble,onDemo:newScramble,onChoose:choose,onPause:pause,onResume:resume,onStepForward:()=>play(true),onStepBack:back,onRestart:restart,onMore:moreSearch,onSettingsChange:changeSettings},settings);
+ const view=createSolverView(container,{onInputChange,onSolve:solve,onRandom:newScramble,onDemo:newScramble,onChoose:choose,onPause:pause,onResume:resume,onStepForward:()=>play(true),onStepBack:back,onRestart:restart,onMore:moreSearch,onSettingsChange:changeSettings,onGame:openGame},settings);
+ function openGame(){if(!validate(state).valid){view.showStatus('Сначала задай корректную раскраску куба.');return;}save('rg2.cfop.input',Array.from(state));window.RG2App?.navigate({type:'tool',id:'virtual-puzzles',source:'cfop'});}
  settings=view.getSettings();view.setInput(initial);rebaseInput();syncScramble(initial);
  function rebaseInput(color=settings.crossColor,{resetCamera=false}={}){const frame=view.setFrameColor(color);state=Uint8Array.from(frame.state);frameCenters=[...frame.centers];if(resetCamera)view.renderer.resetCamera();return frame;}
  function previewCross(candidate){if(!candidate?.baseState)return;const frame=view.setFrameColor(candidate.crossColor,{render:false});if(settings.crossColor==='auto'){settings=view.getSettings();save('rg2.cfop.settings',settings);}state=Uint8Array.from(candidate.baseState);frameCenters=[...frame.centers];view.renderer.setState(state);view.renderer.resetCamera();}

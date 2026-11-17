@@ -1,0 +1,10 @@
+{
+  "package": "cubing",
+  "version": "0.66.1",
+  "revision": "8544249ff1e662557df912065a26b5f90f4df574",
+  "tarball": "https://registry.npmjs.org/cubing/-/cubing-0.66.1.tgz",
+  "integrity": "sha512-a1DShbjpyTVwoSwg7wyBjEhdvQrhh0/qtJWCzPtNtGDJ7JX18K1gwXlxA+mOVIrNbp5drnnqcmw7+ygnM5Fi6A==",
+  "chosenLicense": "MPL-2.0",
+  "source": "https://github.com/cubing/cubing.js/tree/8544249ff1e662557df912065a26b5f90f4df574",
+  "modifications": "Unmodified JavaScript distribution. No branding, media or Bluetooth feature is used."
+}

@@ -23,6 +23,7 @@ export function createSolverView(container,callbacks={},settings={}){
   frameColor=determineCrossColor(input,config.crossColor,config.autoCrossColor);
   $('.cfop-timeline-head').insertAdjacentHTML('afterend','<div class="cfop-frame" aria-label="Ориентация решения"><div><strong>Перед решением</strong><code data-setup-moves></code></div><p data-solution-frame></p><button type="button" data-action="copy-setup">Копировать поворот</button></div>');
   const copyActions=document.createElement('div');copyActions.className='cfop-timeline-actions';$('[data-action="copy"]').before(copyActions);copyActions.append($('[data-action="copy"]'));copyActions.insertAdjacentHTML('beforeend','<button type="button" data-action="copy-stages" disabled>Копировать по этапам</button>');
+  $('.cfop-playback').insertAdjacentHTML('beforeend','<button type="button" data-action="play-game">Собирать самому</button>');
   let renderer;
   try{renderer=createRenderer($('.cfop-cube'),{onPaint:index=>paint(index,true)});}catch(error){$('.cfop-cube').innerHTML=`<p class="cfop-render-error">Не удалось включить 3D. Проверь поддержку WebGL2.<br>${esc(error.message)}</p>`;renderer={setState(){},animateMove(){return Promise.reject(new Error('3D недоступно: '+error.message));},setEditable(){},resetCamera(){},dispose(){}};}
   for(const node of root.querySelectorAll('[data-setting]')){const value=config[node.dataset.setting];if(node.type==='checkbox')node.checked=Boolean(value);else node.value=String(value);}
@@ -91,6 +92,7 @@ export function createSolverView(container,callbacks={},settings={}){
     if(action==='clear'){const next=new Array(54).fill(255);for(let f=0;f<6;f++)next[f*9+4]=input[f*9+4]<6?input[f*9+4]:f;setInput(next);callbacks.onInputChange?.(Array.from(input));}
     else if(action==='solved'){setInput(SOLVED);callbacks.onInputChange?.(Array.from(input));}
     else if(action==='camera')renderer.resetCamera();
+    else if(action==='play-game')callbacks.onGame?.();
     else if(action==='demo')(callbacks.onRandom||callbacks.onDemo)?.();
     else if(action==='solve')callbacks.onSolve?.(Array.from(input),getSettings());
     else if(action==='pause')callbacks.onPause?.();else if(action==='resume')callbacks.onResume?.();else if(action==='next')callbacks.onStepForward?.();else if(action==='back')callbacks.onStepBack?.();else if(action==='restart')callbacks.onRestart?.();else if(action==='search-more')callbacks.onMore?.();

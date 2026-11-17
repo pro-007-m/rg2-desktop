@@ -19,12 +19,13 @@ public partial class MainWindow : Window
     private string themePreference = "system";
     private readonly ReleaseUpdater updater;
     private bool disposed;
+    private bool puzzleDocumentOpen;
     private static readonly JsonSerializerOptions UpdateJsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private static string CurrentAppVersion
     {
         get
         {
-            Version version = typeof(MainWindow).Assembly.GetName().Version ?? new Version(1, 5, 0);
+            Version version = typeof(MainWindow).Assembly.GetName().Version ?? new Version(1, 6, 0);
             return $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
         }
     }
@@ -92,6 +93,17 @@ public partial class MainWindow : Window
                     JsonElement data = json.RootElement;
                     if (data.ValueKind != JsonValueKind.Object || !data.TryGetProperty("type", out JsonElement type) || type.ValueKind != JsonValueKind.String) return;
                     string? command = type.GetString();
+                    if (command is "puzzle-focus" or "export-puzzle" or "import-puzzle")
+                    {
+                        if (!IsUpdateMessageSource(message.Source)) return;
+                        if (command == "puzzle-focus")
+                        {
+                            if (data.TryGetProperty("enabled", out JsonElement enabled) && enabled.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                                core.Settings.AreBrowserAcceleratorKeysEnabled = !enabled.GetBoolean();
+                        }
+                        else await PuzzleDocumentAsync(command, data);
+                        return;
+                    }
                     if (command is "update-check" or "update-install" or "update-cancel")
                     {
                         if (!IsUpdateMessageSource(message.Source)) return;
@@ -177,6 +189,52 @@ public partial class MainWindow : Window
     private static bool IsUpdateMessageSource(string value) =>
         Uri.TryCreate(value, UriKind.Absolute, out Uri? uri) && IsLocalUri(value) &&
         uri.IsDefaultPort && uri.UserInfo.Length == 0 && uri.AbsolutePath == "/index.html";
+
+    private async Task PuzzleDocumentAsync(string command, JsonElement data)
+    {
+        if (puzzleDocumentOpen) return;
+        puzzleDocumentOpen = true;
+        try
+        {
+            if (command == "export-puzzle")
+            {
+                if (!data.TryGetProperty("text", out JsonElement textElement) || textElement.ValueKind != JsonValueKind.String) return;
+                string text = textElement.GetString() ?? "";
+                if (System.Text.Encoding.UTF8.GetByteCount(text) > 8 * 1024 * 1024) throw new IOException("Файл партии больше 8 МБ.");
+                using JsonDocument game = JsonDocument.Parse(text);
+                if (!game.RootElement.TryGetProperty("schema", out JsonElement schema) || schema.GetString() != "rg2-puzzle-game") return;
+                string name = data.TryGetProperty("name", out JsonElement proposed) && proposed.ValueKind == JsonValueKind.String ? Path.GetFileName(proposed.GetString() ?? "RG2-puzzle.json") : "RG2-puzzle.json";
+                if (string.IsNullOrWhiteSpace(name) || !name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) name = "RG2-puzzle.json";
+                SaveFileDialog dialog = new() { Title = "Сохранить партию RG2", Filter = "Партия RG2 (*.json)|*.json", DefaultExt = ".json", FileName = name, AddExtension = true };
+                if (dialog.ShowDialog(this) == true)
+                {
+                    await File.WriteAllTextAsync(dialog.FileName, text);
+                    await PuzzleToastAsync("Партия сохранена.");
+                }
+            }
+            else
+            {
+                OpenFileDialog dialog = new() { Title = "Открыть партию RG2", Filter = "Партия RG2 (*.json)|*.json|Все файлы (*.*)|*.*", Multiselect = false };
+                if (dialog.ShowDialog(this) != true) return;
+                if (new FileInfo(dialog.FileName).Length > 8 * 1024 * 1024) throw new IOException("Файл партии больше 8 МБ.");
+                string text = await File.ReadAllTextAsync(dialog.FileName);
+                using JsonDocument game = JsonDocument.Parse(text);
+                string argument = JsonSerializer.Serialize(text);
+                if (!disposed) await Browser.CoreWebView2.ExecuteScriptAsync("(()=>{const tool=document.querySelector('#tool-host')?.virtualPuzzle;if(tool)tool.receiveImport(" + argument + ");else window.RG2App?.toast('Открой виртуальные головоломки и повтори импорт.');})()");
+            }
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+        {
+            await PuzzleToastAsync(error is JsonException ? "Не удалось прочитать JSON-партию." : "Не удалось открыть или сохранить файл партии.");
+        }
+        finally { puzzleDocumentOpen = false; }
+    }
+
+    private async Task PuzzleToastAsync(string text)
+    {
+        if (!disposed && Browser.CoreWebView2 is { } core)
+            await core.ExecuteScriptAsync("window.RG2App?.toast(" + JsonSerializer.Serialize(text) + ")");
+    }
 
     private void SaveAppearance()
     {

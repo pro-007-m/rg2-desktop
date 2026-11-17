@@ -1,0 +1,217 @@
+{
+  "package": "cubing",
+  "version": "0.66.1",
+  "source": "https://www.npmjs.com/package/cubing/v/0.66.1",
+  "files": [
+    {
+      "path": "alg/index.js",
+      "bytes": 641,
+      "sha256": "edfc511e67866d23a02c6da8d910b8ed640b51de231119086db1dbedb14b76f1"
+    },
+    {
+      "path": "bluetooth/index.js",
+      "bytes": 58160,
+      "sha256": "2cbf1f31e1c0962ee0ec2175708dbe8a6547adc9ba581553eab340d03718a1d8"
+    },
+    {
+      "path": "chunks/big-puzzle-orientation-KJL4OFV2.js",
+      "bytes": 2089,
+      "sha256": "30858a0b6333fc21e38f84c9daf685aaf94d0c16fe53f0116722fc0502196ec3"
+    },
+    {
+      "path": "chunks/chunk-6R47S6MP.js",
+      "bytes": 20117,
+      "sha256": "7884b2b2f1924a7829c72f2b4f500396bc83498c32b28215b0277c47cd9afec6"
+    },
+    {
+      "path": "chunks/chunk-7LEVC3YR.js",
+      "bytes": 3173,
+      "sha256": "74d51375b09771b1c0346ae2906e011e4398191ba8748c0c98f139e3d3911cfb"
+    },
+    {
+      "path": "chunks/chunk-BHVTDDUY.js",
+      "bytes": 117,
+      "sha256": "deea36a2a7ac078f6c784dd08d08ce0dc7a56e8800a25f9419e044b1cbcd30c9"
+    },
+    {
+      "path": "chunks/chunk-IIJFVP3K.js",
+      "bytes": 54641,
+      "sha256": "c72b312abcecd581a3453a4af2e99f6b496dcbf73c3b2bddde6204b1a3f68a53"
+    },
+    {
+      "path": "chunks/chunk-KH2MQ7KY.js",
+      "bytes": 7487,
+      "sha256": "2e861c7d667db3c84650725b38ff7843ea82bcdb53eaac4af836202b8fecd607"
+    },
+    {
+      "path": "chunks/chunk-LBER75W4.js",
+      "bytes": 22716,
+      "sha256": "ff3c80178cd4ea94515d160776a599d3d1e3d283aea5cbf1e290dded82f34ec2"
+    },
+    {
+      "path": "chunks/chunk-NJ66FRKF.js",
+      "bytes": 9516,
+      "sha256": "2cff28d725f65948418da024672a1c10381df3fbe718b668890ab6cd0cc955a5"
+    },
+    {
+      "path": "chunks/chunk-QOLD6GH2.js",
+      "bytes": 24969,
+      "sha256": "b02ae6ada7934a77682b78c3d900ada12ef9a4b7b5eff452682af6b3bd028679"
+    },
+    {
+      "path": "chunks/chunk-QZK3M7IM.js",
+      "bytes": 56280,
+      "sha256": "eebb89316da2ba555afd826e108c87cfa6f8faead9cad7d23922652a62ad18a6"
+    },
+    {
+      "path": "chunks/chunk-RDKH6CDA.js",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "chunks/chunk-T5M3DY5P.js",
+      "bytes": 34384,
+      "sha256": "4fe31e5d859401e91f6d6333d77a59582d883ba19b412e35def17f599ad93ebb"
+    },
+    {
+      "path": "chunks/chunk-UKAXYOG2.js",
+      "bytes": 8739,
+      "sha256": "6ba75ec5710f2428358d260209221b530e01b1d2c87f786a2866c1f8150b1b29"
+    },
+    {
+      "path": "chunks/chunk-YJH5LHFN.js",
+      "bytes": 760,
+      "sha256": "89a1bb699bc73788b0e69b4cbcacb6f71bfe0f5c87dd0454160284fe1c1fe874"
+    },
+    {
+      "path": "chunks/inside-UWSZBO4Y.js",
+      "bytes": 18812,
+      "sha256": "4e51b1001e16aa43573b3f375478cfe66ad6fc2f59d0751a810d2eb45217a2ce"
+    },
+    {
+      "path": "chunks/puzzles-dynamic-3x3x3-CMH2HHH5.js",
+      "bytes": 23912,
+      "sha256": "93d79e1223a4c3f60327f912dc6f18e15ce51770f786145d7396d91a8d57519d"
+    },
+    {
+      "path": "chunks/puzzles-dynamic-4x4x4-UFAQS3QG.js",
+      "bytes": 8345,
+      "sha256": "0d3b1ffed183c75ca0865511d5b3c6a35bea5342d3bd8779f5267dbd6934509d"
+    },
+    {
+      "path": "chunks/puzzles-dynamic-megaminx-EFR4GQFA.js",
+      "bytes": 16834,
+      "sha256": "d320a0b71b1eafe33e77c29b70f829137b184e8ad66e94715a335304f3a85ac8"
+    },
+    {
+      "path": "chunks/puzzles-dynamic-side-events-KF3PEOJN.js",
+      "bytes": 157488,
+      "sha256": "fdb72582e167a1ddbd6bbac19e4727d8c2097b2e37385e03d96e51bad467a3e8"
+    },
+    {
+      "path": "chunks/puzzles-dynamic-unofficial-6BF3EWTI.js",
+      "bytes": 45584,
+      "sha256": "82d0e4db17cef8b769d76d1f0668ac9ce249eab633bc09a95cb43fe8395aee42"
+    },
+    {
+      "path": "chunks/search-dynamic-sgs-side-events-5GQDHSJR.js",
+      "bytes": 32881,
+      "sha256": "38baa3abbe42a3327d794b74ce8cfd6833938a2f57da1aabc41459d6a4798b13"
+    },
+    {
+      "path": "chunks/search-dynamic-sgs-unofficial-YM23KVCN.js",
+      "bytes": 37281,
+      "sha256": "f43f7c29d738ff94922ccda14a6d388d7678bce65ae472a0a4ee14119f7a44f2"
+    },
+    {
+      "path": "chunks/search-dynamic-solve-3x3x3-6UMZH4WB.js",
+      "bytes": 64588,
+      "sha256": "56684f608d870047817fc0bb44937663bb8684e30f77df08f93d93979665f6bd"
+    },
+    {
+      "path": "chunks/search-dynamic-solve-4x4x4-KNSBAM7Q.js",
+      "bytes": 69418,
+      "sha256": "5d7882bae80d568dfb30c845dbd02ea596a1c2699128e75a2f770b62a6dd67d3"
+    },
+    {
+      "path": "chunks/search-dynamic-solve-fto-CSXJYISF.js",
+      "bytes": 42218,
+      "sha256": "2491826830d05841344c5e64d726ed9ddb30f978dcaf269e7d36954bf6021ab1"
+    },
+    {
+      "path": "chunks/search-dynamic-solve-kilominx-EHAUQJXS.js",
+      "bytes": 20139,
+      "sha256": "9cbc0c144970d3422fe632fef7214cdde551aab65a3b795b909e34c0c206f0eb"
+    },
+    {
+      "path": "chunks/search-dynamic-solve-master_tetraminx-ZQ25QK7E.js",
+      "bytes": 21347,
+      "sha256": "56620b086ed156e17c6ef9c51e08b1b810247be44fd840865c0ca1624e937d71"
+    },
+    {
+      "path": "chunks/search-worker-entry.js",
+      "bytes": 490,
+      "sha256": "6ed65e39a5618f0d0d2b868624183de4870409c96907ab87df280ef82a914592"
+    },
+    {
+      "path": "chunks/twips-IMF5RNH5.js",
+      "bytes": 14681,
+      "sha256": "63c2ecd0ee4ff5c13a842047d6db315cb6ba2e8c79de1d48e1cabeb816856aa7"
+    },
+    {
+      "path": "chunks/twips_wasm_bg-TJNYGA2C-4JIZWC6Q.js",
+      "bytes": 670748,
+      "sha256": "b6fdeb1b9f5039f8829261222ee7911c59a5f03d45febd6313d5b727acda8b72"
+    },
+    {
+      "path": "chunks/twisty-dynamic-3d-HSYJR5CM.js",
+      "bytes": 59858,
+      "sha256": "f6805cabc822ac20998006a48658d33d9a2939b75a06f265dd0116ca3c5e2a10"
+    },
+    {
+      "path": "kpuzzle/index.js",
+      "bytes": 179,
+      "sha256": "b3a167be0f572381db9c16c22218ebe67f1253e673db93a70b284bd7aac11f2c"
+    },
+    {
+      "path": "notation/index.js",
+      "bytes": 576,
+      "sha256": "e8435e49fa0a924ac36e78afb0e59eafa86a2faa5ad7b31a769969171cffeca6"
+    },
+    {
+      "path": "protocol/index.js",
+      "bytes": 735,
+      "sha256": "bc823772dd47ddcb702e16b571307533e57247380108f6ff80a462ed34abe645"
+    },
+    {
+      "path": "puzzle-geometry/index.js",
+      "bytes": 150479,
+      "sha256": "6ab70f64c3da76e55ab8548c8941521476037bcc121f56b5f3ed32e19cb1bbf0"
+    },
+    {
+      "path": "puzzles/index.js",
+      "bytes": 371,
+      "sha256": "e157e0b558d824dad2c66778b10073f9d443410dfa3100d60004f7c29413f712"
+    },
+    {
+      "path": "scramble/index.js",
+      "bytes": 465,
+      "sha256": "df02aef74a5a97ddbd2030816437118d158ad5e72a0c64dc21f93e354b987dcc"
+    },
+    {
+      "path": "search/index.js",
+      "bytes": 926,
+      "sha256": "e7dfb1af96105ae43217e8f6287a4fc586bee152da749260334de1526a821b96"
+    },
+    {
+      "path": "stream/index.js",
+      "bytes": 2850,
+      "sha256": "5d726c05be7be52be45b71a15a4ac2bee64c194e225e1c49fab9dd6e927994db"
+    },
+    {
+      "path": "twisty/index.js",
+      "bytes": 189732,
+      "sha256": "30eebf73e3c89af978fe4703098fd4386dc358f38580d2fd53a1518c76cd8702"
+    }
+  ]
+}

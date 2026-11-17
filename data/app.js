@@ -5,7 +5,7 @@
   const icon = (name, cls = '') => `<svg class="${esc(cls)}" aria-hidden="true"><use href="#i-${esc(name)}"/></svg>`;
   const read = (key, fallback) => { try { const value=localStorage.getItem(key); return value === null ? fallback : JSON.parse(value); } catch { return fallback; } };
   const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
-  const APP_VERSION='1.5.0';
+  const APP_VERSION='1.6.0';
   const UPDATE_RELEASE_URL='https://github.com/pro-007-m/rg2-desktop/releases/latest';
   const UPDATE_STATUSES=new Set(['idle','checking','available','up-to-date','downloading','verifying','installing','cancelled','error']);
   const UPDATE_BUSY=new Set(['checking','downloading','verifying','installing']);
@@ -81,7 +81,8 @@
     {id:'scramble', title:'Генератор скрамблов', icon:'assets/images/trainers/scramble_gen.png', description:'Новая последовательность для перемешивания.'},
     {id:'pll', title:'PLL тренажер', icon:'assets/images/trainers/pll_trainer.png', description:'Распознавание PLL по сторонам кубика.'},
     {id:'alphabet', title:'Тренажер азбуки', icon:'assets/images/trainers/azbuka_trainer.png', description:'Буквы элементов для слепой сборки.'},
-    {id:'cfop-solver', title:'Решатель CFOP + COLL', icon:'assets/images/main3x3/main_2.png', description:'Раскрась куб и собери его по этапам с выбором алгоритмов и 3D.'}
+    {id:'cfop-solver', title:'Решатель CFOP + COLL', icon:'assets/images/main3x3/main_2.png', description:'Раскрась куб и собери его по этапам с выбором алгоритмов и 3D.'},
+    {id:'virtual-puzzles', title:'Виртуальные головоломки', icon:'assets/images/main3x3/main_2.png', description:'Собирай кубы 2×2–50×50, пирамиды и додекаэдры. Мышь, клавиатура, касания и подсказки.'}
   ];
   function normalizeTool(id) { return ({azbuka:'alphabet',plltest:'pll',scrmbl:'scramble',scrambler:'scramble'})[String(id).toLowerCase()] || String(id).toLowerCase(); }
   function orderedTools() {
@@ -217,12 +218,12 @@
   }
   function hashFor(value) {
     const params=new URLSearchParams({view:value.type});
-    for(const key of ['id','q','scramble'])if(value[key]!==undefined)params.set(key,String(value[key]));
+    for(const key of ['id','q','scramble','kind','size','source'])if(value[key]!==undefined)params.set(key,String(value[key]));
     return '#'+params.toString();
   }
   function routeFromHash() {
     const params=new URLSearchParams(location.hash.slice(1));if(!params.has('view'))return null;
-    const result={type:params.get('view')};for(const key of ['id','q','scramble'])if(params.has(key))result[key]=params.get(key);return result;
+    const result={type:params.get('view')};for(const key of ['id','q','scramble','kind','size','source'])if(params.has(key))result[key]=params.get(key);return result;
   }
   function navigate(value,{replace=false,restoreScroll=false}={}) {
     if(!catalog)return;const next=normalizeRoute(value);
@@ -467,6 +468,14 @@
   function renderTool() {
     const tool=toolDefinitions.find(t=>t.id===route.id);if(!tool){renderMissing();return;}
     setBreadcrumbs([{title:'Тренажеры',route:{type:'tools'}},{title:tool.title}]);
+    if(tool.id==='virtual-puzzles'){
+      const host=document.createElement('div');host.id='tool-host';$('#content').replaceChildren(host);host.textContent='Готовлю виртуальную головоломку…';
+      let cancelled=false,dispose=null;toolDisposer=()=>{cancelled=true;dispose?.();};
+      const initialSpec=route.kind||route.size?{kind:route.kind||'cube',size:Number(route.size)||3}:route.source==='cfop'?{kind:'cube',size:3}:null;
+      const initialState=route.source==='cfop'?read('rg2.cfop.input',null):null;
+      import('./puzzles/tool.mjs').then(module=>{if(!cancelled&&host.isConnected)dispose=module.mount(host,{initialSpec,initialState,onOpenSolver:()=>navigate({type:'tool',id:'cfop-solver'})});}).catch(error=>{if(!cancelled)host.textContent='Не удалось открыть головоломку: '+error.message;});
+      return;
+    }
     if(tool.id==='cfop-solver'){
       const host=document.createElement('div');host.id='tool-host';$('#content').replaceChildren(host);host.textContent='Загружаю решатель…';
       let cancelled=false,dispose=null;

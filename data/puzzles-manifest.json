@@ -1,0 +1,370 @@
+{
+  "schema": "rg2-shared-puzzles",
+  "version": 1,
+  "files": [
+    {
+      "path": "COPYING.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "core.mjs",
+      "sha256": "111411e814a2cb1c3edf51bf5ff5a755f0d55ba939a382b34a00790025d56048"
+    },
+    {
+      "path": "history.mjs",
+      "sha256": "b380fb2298cd66a008cd6de2a58a4a5e8326565ec624644c167362823df20896"
+    },
+    {
+      "path": "input.mjs",
+      "sha256": "ad3c4052e6b8d0579e0566b4d0b3a537ace3ebe279826ffdb26cda4dba6b8e6e"
+    },
+    {
+      "path": "LICENSE-RG2.md",
+      "sha256": "c0790321046d715c9a9362584867b569ca59b86effb70f36b292daa8dc370b9b"
+    },
+    {
+      "path": "model.mjs",
+      "sha256": "134630513095ca1c134a8f6467d1d4e63495b3f03f767de3a09fa41650bbba1b"
+    },
+    {
+      "path": "notation.mjs",
+      "sha256": "8b664911a931bb6f4e3c4d1381502277402a1820ad078e2f1e1f832a6840f201"
+    },
+    {
+      "path": "performance.mjs",
+      "sha256": "6d7664712f25c2eec67dcbd1d669e2e8cc34a8ecc237f491e8014ff258b8303d"
+    },
+    {
+      "path": "poly-core.mjs",
+      "sha256": "e474b9090b09a0bfb8a21908d69bb335e385adee347238153967f23c394f784f"
+    },
+    {
+      "path": "poly-geometry.mjs",
+      "sha256": "089e55460467c14936bf4d0fd784410d5db2bde88dbc1bb9f0a1e33f31ea9819"
+    },
+    {
+      "path": "poly-input.mjs",
+      "sha256": "cce8e3e8b0eaa87e96e47b96e6df51b72742e939fed488b41ce963508be4873d"
+    },
+    {
+      "path": "poly-renderer.mjs",
+      "sha256": "f05cfa4314e15522988fa2ec5f9bf641289e15a99594317d4b35f7b8f901ab72"
+    },
+    {
+      "path": "renderer.mjs",
+      "sha256": "b336e2f2cae905d39669801c3fd57fe71ac4df8fd60d4354784dd96ab8024a58"
+    },
+    {
+      "path": "scramble.mjs",
+      "sha256": "81ca120426923812de5abfd0a57b29980ec6ee38ba2f5d2b2ee46668bd057ef7"
+    },
+    {
+      "path": "solver-client.mjs",
+      "sha256": "97ac056837708af4a8404d8ced18640fa882f5415a7a4dbaa00fe350a5f24d79"
+    },
+    {
+      "path": "solver-general-worker.mjs",
+      "sha256": "5b8818040aa94e7bf0ed30a4cd799b198a0078d86259b82511eb57b52e4850db"
+    },
+    {
+      "path": "solver-general.mjs",
+      "sha256": "7f6eff8420240c44f2bd5cbf64b86295e878e7c37820a05252f67b6ea1065517"
+    },
+    {
+      "path": "solver-nxn.mjs",
+      "sha256": "82a21b18fc2e0cd2229afb6a81707530a44ee7b9922862b8a8fa592d8738811b"
+    },
+    {
+      "path": "solver-poly-large.mjs",
+      "sha256": "a550d5a5ddc71de017b971743ad59252a07ec697f9564cd3c107eadbddcb1ca9"
+    },
+    {
+      "path": "solver-poly-pyramid-data.mjs",
+      "sha256": "9f24e23993b1a30ae784cea5adcbafb3c5b111e654a5543e1e094b0d0df41bcb"
+    },
+    {
+      "path": "solver-poly-pyramid.mjs",
+      "sha256": "104576b26880ec8e42bd177d1385635db395594444029ddae32c702be9e13dff"
+    },
+    {
+      "path": "solver-poly.mjs",
+      "sha256": "b3c7e8a42c61812f751f6f6f5a06f3b4670f47a598e419b238b9b1ca78e2fc7d"
+    },
+    {
+      "path": "solver-two.mjs",
+      "sha256": "e6e482dc180cba646a8394789a51949148a1276e6d29eeadd850dc681fb279c7"
+    },
+    {
+      "path": "tool.mjs",
+      "sha256": "ebb556d995cc039ae30c744c3bab6e26ded3292deda3c3581c579737b0d612fc"
+    },
+    {
+      "path": "vendor/cubing/alg/index.js",
+      "sha256": "edfc511e67866d23a02c6da8d910b8ed640b51de231119086db1dbedb14b76f1"
+    },
+    {
+      "path": "vendor/cubing/bluetooth/index.js",
+      "sha256": "2cbf1f31e1c0962ee0ec2175708dbe8a6547adc9ba581553eab340d03718a1d8"
+    },
+    {
+      "path": "vendor/cubing/chunks/big-puzzle-orientation-KJL4OFV2.js",
+      "sha256": "30858a0b6333fc21e38f84c9daf685aaf94d0c16fe53f0116722fc0502196ec3"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-6R47S6MP.js",
+      "sha256": "7884b2b2f1924a7829c72f2b4f500396bc83498c32b28215b0277c47cd9afec6"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-7LEVC3YR.js",
+      "sha256": "74d51375b09771b1c0346ae2906e011e4398191ba8748c0c98f139e3d3911cfb"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-BHVTDDUY.js",
+      "sha256": "deea36a2a7ac078f6c784dd08d08ce0dc7a56e8800a25f9419e044b1cbcd30c9"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-IIJFVP3K.js",
+      "sha256": "c72b312abcecd581a3453a4af2e99f6b496dcbf73c3b2bddde6204b1a3f68a53"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-KH2MQ7KY.js",
+      "sha256": "2e861c7d667db3c84650725b38ff7843ea82bcdb53eaac4af836202b8fecd607"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-LBER75W4.js",
+      "sha256": "ff3c80178cd4ea94515d160776a599d3d1e3d283aea5cbf1e290dded82f34ec2"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-NJ66FRKF.js",
+      "sha256": "2cff28d725f65948418da024672a1c10381df3fbe718b668890ab6cd0cc955a5"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-QOLD6GH2.js",
+      "sha256": "b02ae6ada7934a77682b78c3d900ada12ef9a4b7b5eff452682af6b3bd028679"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-QZK3M7IM.js",
+      "sha256": "eebb89316da2ba555afd826e108c87cfa6f8faead9cad7d23922652a62ad18a6"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-RDKH6CDA.js",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-T5M3DY5P.js",
+      "sha256": "4fe31e5d859401e91f6d6333d77a59582d883ba19b412e35def17f599ad93ebb"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-UKAXYOG2.js",
+      "sha256": "6ba75ec5710f2428358d260209221b530e01b1d2c87f786a2866c1f8150b1b29"
+    },
+    {
+      "path": "vendor/cubing/chunks/chunk-YJH5LHFN.js",
+      "sha256": "89a1bb699bc73788b0e69b4cbcacb6f71bfe0f5c87dd0454160284fe1c1fe874"
+    },
+    {
+      "path": "vendor/cubing/chunks/inside-UWSZBO4Y.js",
+      "sha256": "4e51b1001e16aa43573b3f375478cfe66ad6fc2f59d0751a810d2eb45217a2ce"
+    },
+    {
+      "path": "vendor/cubing/chunks/puzzles-dynamic-3x3x3-CMH2HHH5.js",
+      "sha256": "93d79e1223a4c3f60327f912dc6f18e15ce51770f786145d7396d91a8d57519d"
+    },
+    {
+      "path": "vendor/cubing/chunks/puzzles-dynamic-4x4x4-UFAQS3QG.js",
+      "sha256": "0d3b1ffed183c75ca0865511d5b3c6a35bea5342d3bd8779f5267dbd6934509d"
+    },
+    {
+      "path": "vendor/cubing/chunks/puzzles-dynamic-megaminx-EFR4GQFA.js",
+      "sha256": "d320a0b71b1eafe33e77c29b70f829137b184e8ad66e94715a335304f3a85ac8"
+    },
+    {
+      "path": "vendor/cubing/chunks/puzzles-dynamic-side-events-KF3PEOJN.js",
+      "sha256": "fdb72582e167a1ddbd6bbac19e4727d8c2097b2e37385e03d96e51bad467a3e8"
+    },
+    {
+      "path": "vendor/cubing/chunks/puzzles-dynamic-unofficial-6BF3EWTI.js",
+      "sha256": "82d0e4db17cef8b769d76d1f0668ac9ce249eab633bc09a95cb43fe8395aee42"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-dynamic-sgs-side-events-5GQDHSJR.js",
+      "sha256": "38baa3abbe42a3327d794b74ce8cfd6833938a2f57da1aabc41459d6a4798b13"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-dynamic-sgs-unofficial-YM23KVCN.js",
+      "sha256": "f43f7c29d738ff94922ccda14a6d388d7678bce65ae472a0a4ee14119f7a44f2"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-dynamic-solve-3x3x3-6UMZH4WB.js",
+      "sha256": "56684f608d870047817fc0bb44937663bb8684e30f77df08f93d93979665f6bd"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-dynamic-solve-4x4x4-KNSBAM7Q.js",
+      "sha256": "5d7882bae80d568dfb30c845dbd02ea596a1c2699128e75a2f770b62a6dd67d3"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-dynamic-solve-fto-CSXJYISF.js",
+      "sha256": "2491826830d05841344c5e64d726ed9ddb30f978dcaf269e7d36954bf6021ab1"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-dynamic-solve-kilominx-EHAUQJXS.js",
+      "sha256": "9cbc0c144970d3422fe632fef7214cdde551aab65a3b795b909e34c0c206f0eb"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-dynamic-solve-master_tetraminx-ZQ25QK7E.js",
+      "sha256": "56620b086ed156e17c6ef9c51e08b1b810247be44fd840865c0ca1624e937d71"
+    },
+    {
+      "path": "vendor/cubing/chunks/search-worker-entry.js",
+      "sha256": "6ed65e39a5618f0d0d2b868624183de4870409c96907ab87df280ef82a914592"
+    },
+    {
+      "path": "vendor/cubing/chunks/twips-IMF5RNH5.js",
+      "sha256": "63c2ecd0ee4ff5c13a842047d6db315cb6ba2e8c79de1d48e1cabeb816856aa7"
+    },
+    {
+      "path": "vendor/cubing/chunks/twips_wasm_bg-TJNYGA2C-4JIZWC6Q.js",
+      "sha256": "b6fdeb1b9f5039f8829261222ee7911c59a5f03d45febd6313d5b727acda8b72"
+    },
+    {
+      "path": "vendor/cubing/chunks/twisty-dynamic-3d-HSYJR5CM.js",
+      "sha256": "f6805cabc822ac20998006a48658d33d9a2939b75a06f265dd0116ca3c5e2a10"
+    },
+    {
+      "path": "vendor/cubing/kpuzzle/index.js",
+      "sha256": "b3a167be0f572381db9c16c22218ebe67f1253e673db93a70b284bd7aac11f2c"
+    },
+    {
+      "path": "vendor/cubing/LICENSE-GPL.md",
+      "sha256": "c81eb76186478bfdba969e6feb26910fbef0dbba496416423f27b9fced6e46a9"
+    },
+    {
+      "path": "vendor/cubing/LICENSE-MPL.md",
+      "sha256": "61571dc4c616bf39d5724198cde756eca8fd8f50629c24bdec8c34faf36314a7"
+    },
+    {
+      "path": "vendor/cubing/manifest.json",
+      "sha256": "5c52f1f19ba7b062043252ee8023db645e358905b8b95e00d9ea7d71b4004825"
+    },
+    {
+      "path": "vendor/cubing/notation/index.js",
+      "sha256": "e8435e49fa0a924ac36e78afb0e59eafa86a2faa5ad7b31a769969171cffeca6"
+    },
+    {
+      "path": "vendor/cubing/package.json",
+      "sha256": "5245ff35e2372f50c7181a48eed5d9b7c1c77ffff11a0825453520ee4213b0ba"
+    },
+    {
+      "path": "vendor/cubing/protocol/index.js",
+      "sha256": "bc823772dd47ddcb702e16b571307533e57247380108f6ff80a462ed34abe645"
+    },
+    {
+      "path": "vendor/cubing/puzzle-geometry/index.js",
+      "sha256": "6ab70f64c3da76e55ab8548c8941521476037bcc121f56b5f3ed32e19cb1bbf0"
+    },
+    {
+      "path": "vendor/cubing/puzzles/index.js",
+      "sha256": "e157e0b558d824dad2c66778b10073f9d443410dfa3100d60004f7c29413f712"
+    },
+    {
+      "path": "vendor/cubing/scramble/index.js",
+      "sha256": "df02aef74a5a97ddbd2030816437118d158ad5e72a0c64dc21f93e354b987dcc"
+    },
+    {
+      "path": "vendor/cubing/search/index.js",
+      "sha256": "e7dfb1af96105ae43217e8f6287a4fc586bee152da749260334de1526a821b96"
+    },
+    {
+      "path": "vendor/cubing/SOURCE.json",
+      "sha256": "ff163a8f1f854fb1f1ba5fb4b9242fa426566cb4e3310df2e53920fdd57875be"
+    },
+    {
+      "path": "vendor/cubing/stream/index.js",
+      "sha256": "5d726c05be7be52be45b71a15a4ac2bee64c194e225e1c49fab9dd6e927994db"
+    },
+    {
+      "path": "vendor/cubing/twisty/index.js",
+      "sha256": "30eebf73e3c89af978fe4703098fd4386dc358f38580d2fd53a1518c76cd8702"
+    },
+    {
+      "path": "vendor/cubing/UPSTREAM-README.md",
+      "sha256": "c2994936fdedb174ab811b92dbb9e85060dfca7dc1338c76c5b79cbfa5804f79"
+    },
+    {
+      "path": "vendor/rcube/build-port.py",
+      "sha256": "cb11890e4102404b2fad9c57f3288190a7f833462dca29e74a03f2763b562c5e"
+    },
+    {
+      "path": "vendor/rcube/LICENSE.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "vendor/rcube/NOTICE.md",
+      "sha256": "1102bb6b18656db310579964d73cde55128701ff0febc5b4b00df6e8b83c4d6c"
+    },
+    {
+      "path": "vendor/rcube/rcube.mjs",
+      "sha256": "04b90695829de98d75521247c08d4e0c0770b9693cf3535574149906bfa6e36c"
+    },
+    {
+      "path": "vendor/rcube/SOURCE.json",
+      "sha256": "22f8aea36b57692537005312a6b4a3299a57101526d84d3b0362448ff78af5c6"
+    },
+    {
+      "path": "vendor/rcube/upstream/CMakeLists.txt",
+      "sha256": "7ba710e7f362e6b52ad3979202ab2bafa8d3215ad6ed051e29c743e6bb7a380d"
+    },
+    {
+      "path": "vendor/rcube/upstream/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/CMakeLists.txt",
+      "sha256": "f360694d5d3c61992f64851858833e83ec3addf4f032440477f0c01f0dddd3d7"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/Cube.cpp",
+      "sha256": "10723d61a15afd23cce892c422c2d1fa28217797b82bc1f5004edfe8aec1a208"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/Cube.h",
+      "sha256": "d7247c4a66e1877f7f8c809f612a79012b4314bdf2d8781981f7368e4a0a4903"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/CubeViewer.cpp",
+      "sha256": "c03afffc7fab1d58e08d45d5b55e97358f763d91083713fedd34fe2a9e9b4d41"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/CubeViewer.h",
+      "sha256": "711fd81448c0147a88fcac30718a12e26c202cf4d3da09122f32fbea3682f720"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/Face.cpp",
+      "sha256": "f4e5757b82dcc4c34b9c842000e8048ebf81d7a5f8aa723361fe0bd6f00a3a9a"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/Face.h",
+      "sha256": "60448e6cd675afef197fa176aecb821e4034433baec76e93618144f0627a6c90"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/Source.cpp",
+      "sha256": "743ab59d4af82776ef8ff3c78ae832ba230a9daae155ffbc411a245b6025b6ca"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/TinyPngOut.cpp",
+      "sha256": "073c785c5f1c8f3176255c76c62fb5cef5cdd02a506cc08dfce33dd88e9969a2"
+    },
+    {
+      "path": "vendor/rcube/upstream/RCube/TinyPngOut.hpp",
+      "sha256": "5cb585efda00dd828ce566f1d93982d725383cf2260c3dcf8258bcfb841fbea8"
+    },
+    {
+      "path": "vendor/rcube/upstream/README.md",
+      "sha256": "a525a176dd763809e5619864e4f797cb78a41ed128280b1d23d83351a76084f7"
+    },
+    {
+      "path": "view.css",
+      "sha256": "e0e16ea3b207a0ca65fadf59d4c6a558016969724042a8cdc0aed7777ef0fb18"
+    }
+  ]
+}

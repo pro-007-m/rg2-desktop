@@ -1,0 +1,73 @@
+{
+  "repository": "https://github.com/ShellPuppy/RCube",
+  "revision": "c0e6df125db141eaf0044bf5a39cb54c942cfab2",
+  "retrieved": "2026-11-16",
+  "license": "GPL-3.0",
+  "files": [
+    {
+      "path": "upstream/CMakeLists.txt",
+      "bytes": 102,
+      "sha256": "7ba710e7f362e6b52ad3979202ab2bafa8d3215ad6ed051e29c743e6bb7a380d"
+    },
+    {
+      "path": "upstream/LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "upstream/RCube/CMakeLists.txt",
+      "bytes": 160,
+      "sha256": "f360694d5d3c61992f64851858833e83ec3addf4f032440477f0c01f0dddd3d7"
+    },
+    {
+      "path": "upstream/RCube/Cube.cpp",
+      "bytes": 33224,
+      "sha256": "10723d61a15afd23cce892c422c2d1fa28217797b82bc1f5004edfe8aec1a208"
+    },
+    {
+      "path": "upstream/RCube/Cube.h",
+      "bytes": 7503,
+      "sha256": "d7247c4a66e1877f7f8c809f612a79012b4314bdf2d8781981f7368e4a0a4903"
+    },
+    {
+      "path": "upstream/RCube/CubeViewer.cpp",
+      "bytes": 2009,
+      "sha256": "c03afffc7fab1d58e08d45d5b55e97358f763d91083713fedd34fe2a9e9b4d41"
+    },
+    {
+      "path": "upstream/RCube/CubeViewer.h",
+      "bytes": 303,
+      "sha256": "711fd81448c0147a88fcac30718a12e26c202cf4d3da09122f32fbea3682f720"
+    },
+    {
+      "path": "upstream/RCube/Face.cpp",
+      "bytes": 2878,
+      "sha256": "f4e5757b82dcc4c34b9c842000e8048ebf81d7a5f8aa723361fe0bd6f00a3a9a"
+    },
+    {
+      "path": "upstream/RCube/Face.h",
+      "bytes": 3873,
+      "sha256": "60448e6cd675afef197fa176aecb821e4034433baec76e93618144f0627a6c90"
+    },
+    {
+      "path": "upstream/RCube/Source.cpp",
+      "bytes": 2637,
+      "sha256": "743ab59d4af82776ef8ff3c78ae832ba230a9daae155ffbc411a245b6025b6ca"
+    },
+    {
+      "path": "upstream/RCube/TinyPngOut.cpp",
+      "bytes": 6311,
+      "sha256": "073c785c5f1c8f3176255c76c62fb5cef5cdd02a506cc08dfce33dd88e9969a2"
+    },
+    {
+      "path": "upstream/RCube/TinyPngOut.hpp",
+      "bytes": 3556,
+      "sha256": "5cb585efda00dd828ce566f1d93982d725383cf2260c3dcf8258bcfb841fbea8"
+    },
+    {
+      "path": "upstream/README.md",
+      "bytes": 4643,
+      "sha256": "a525a176dd763809e5619864e4f797cb78a41ed128280b1d23d83351a76084f7"
+    }
+  ]
+}

@@ -19,13 +19,13 @@ test('Settings show current app version and local controls while original credit
     assert.equal(await window.RG2App.ready, true);
     window.RG2App.navigate({ type: 'settings' });
     const settings = window.document.querySelector('.settings-layout');
-    assert.ok(settings.textContent.includes('RG2 · Desktop 1.5.0'));
+    assert.ok(settings.textContent.includes('RG2 · Desktop 1.6.0'));
     assert.ok(!/RG2F|RubicsGuide|автор/i.test(settings.textContent));
     assert.equal(settings.querySelectorAll('[data-open-item]').length, 0);
     assert.equal(settings.querySelectorAll('input[name="theme"]').length, 3);
     assert.ok(settings.textContent.includes('Горячие клавиши'));
     assert.ok(settings.textContent.includes('сохраняются на этом компьютере'));
-    assert.match(read('RG2.Desktop.csproj'), /<Version>1\.5\.0<\/Version>/);
+    assert.match(read('RG2.Desktop.csproj'), /<Version>1\.6\.0<\/Version>/);
     assert.ok(window.RG2App.items.has('ABOUT-0'));
     window.RG2App.openItem('ABOUT-0');
     assert.ok(window.document.querySelector('#article-body').textContent.trim().length > 100);
@@ -293,7 +293,7 @@ test('Native update status is safely rendered, versioned and recoverable after i
   const node = id => app.window.document.querySelector('#' + id);
   try {
     app.nativeMessage({ type: 'update-status', status: 'unknown', currentVersion: '999.0.0', version: '999.0.0', message: 'ignored' });
-    assert.ok(node('update-current-version').textContent.includes('1.5.0'));
+    assert.ok(node('update-current-version').textContent.includes('1.6.0'));
     app.nativeMessage({ type: 'update-status', status: 'available', currentVersion: '1.5.0', version: '1.5.1-beta', message: '<img src=x onerror=alert(1)>' });
     assert.equal(node('update-install').hidden, true);
     assert.equal(node('update-status').querySelector('img'), null);

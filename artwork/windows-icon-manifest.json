@@ -1,0 +1,103 @@
+{
+  "master": "artwork/cube-mark.png",
+  "masterSha256": "ebb84130b704ea8a1d957b469d7c56d95ff146e8ac1dd08d58a4ee47ee8ae4e4",
+  "frames": [
+    {
+      "size": 16,
+      "alphaBounds": [
+        1,
+        0,
+        14,
+        15
+      ]
+    },
+    {
+      "size": 20,
+      "alphaBounds": [
+        1,
+        0,
+        18,
+        19
+      ]
+    },
+    {
+      "size": 24,
+      "alphaBounds": [
+        2,
+        0,
+        22,
+        23
+      ]
+    },
+    {
+      "size": 32,
+      "alphaBounds": [
+        2,
+        0,
+        29,
+        31
+      ]
+    },
+    {
+      "size": 40,
+      "alphaBounds": [
+        3,
+        1,
+        36,
+        39
+      ]
+    },
+    {
+      "size": 48,
+      "alphaBounds": [
+        4,
+        1,
+        44,
+        47
+      ]
+    },
+    {
+      "size": 64,
+      "alphaBounds": [
+        5,
+        1,
+        58,
+        62
+      ]
+    },
+    {
+      "size": 128,
+      "alphaBounds": [
+        10,
+        2,
+        117,
+        125
+      ]
+    },
+    {
+      "size": 256,
+      "alphaBounds": [
+        21,
+        5,
+        235,
+        251
+      ]
+    }
+  ],
+  "transparent": true,
+  "appIconCanvas": 1024,
+  "appIconContent": 922,
+  "alphaCleanup": "discard disconnected noise; preserve centered cube and attached antialiasing",
+  "files": [
+    {
+      "path": "app.ico",
+      "bytes": 107759,
+      "sha256": "0c574af27f89fa18f5e918274e996c18b8e4fc9f22b12ce036c5a5c3e42f8678"
+    },
+    {
+      "path": "data/app-icon.png",
+      "bytes": 758952,
+      "sha256": "3f3c42c301faddbe91956dfdf2adf93081c3a2a5b7159b4342191e785105ceec"
+    }
+  ]
+}

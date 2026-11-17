@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "1.7.0"
+  #define AppVersion "1.7.1"
 #endif
 #ifndef AppGuid
   #define AppGuid "8A0E0E87-2DC8-4E66-857F-E5881EAA379E"

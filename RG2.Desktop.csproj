@@ -11,7 +11,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <Product>TwistForge</Product>
     <Description>TwistForge offline cube learning and practice</Description>
-    <Version>1.7.0</Version>
+    <Version>1.7.1</Version>
     <RuntimeFrameworkVersion>10.0.14</RuntimeFrameworkVersion>
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>

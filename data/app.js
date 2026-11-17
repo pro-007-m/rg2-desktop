@@ -5,7 +5,7 @@
   const icon = (name, cls = '') => `<svg class="${esc(cls)}" aria-hidden="true"><use href="#i-${esc(name)}"/></svg>`;
   const read = (key, fallback) => { try { const value=localStorage.getItem(key); return value === null ? fallback : JSON.parse(value); } catch { return fallback; } };
   const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
-  const APP_VERSION='1.7.0';
+  const APP_VERSION='1.7.1';
   const UPDATE_RELEASE_URL='https://github.com/pro-007-m/twistforge-desktop/releases/latest';
   const UPDATE_STATUSES=new Set(['idle','checking','available','up-to-date','downloading','verifying','installing','cancelled','error']);
   const UPDATE_BUSY=new Set(['checking','downloading','verifying','installing']);

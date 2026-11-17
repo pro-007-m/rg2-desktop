@@ -1,11 +1,10 @@
-Mode: built-in image_gen; generate new image; transparent_background=true; no reference images.
-Final output: rg2-icon.png
+TwistForge icon correction, 2026-11-17
+Mode: built-in image_gen; edit existing artwork; transparent_background=true.
+Project master: artwork/cube-mark.png; also used as data/app-icon.png.
+Windows ICO and Android launcher resources are derived from this transparent foreground.
 
-Final prompt:
-Use case: logo-brand
-Asset type: production Windows desktop application icon, square 1024 by 1024 PNG, genuinely transparent background outside the icon tile.
-Primary request: create a refined modern icon for RG2, an application for learning Rubik's Cube algorithms, matching its calm light Atelier and dark Graphite themes.
-Subject and composition: exactly one sculpted isometric 3x3 cube, precisely three rows and three columns of tiles on each of its three visible faces. Center it on a refined rounded-square graphite app-icon tile. The rounded-square tile occupies about 82 percent of the canvas, leaving generous completely transparent outer padding. The cube is large, balanced, and instantly legible as a cube at 16px and 32px icon sizes.
-Color palette: warm ivory top face, muted sage and forest-green left face, desaturated periwinkle/electric-blue right face. Thin graphite seams separate the nine tiles of each face. Restrained graphite rounded-square backing with a subtle edge.
-Style and lighting: polished minimal sculptural icon, gentle bevel lighting, subtle dimensionality, clean crisp silhouette, restrained soft shading, no ornamental detail.
-Constraints: no letters, no words, no logos, no watermark, no complex glow, no extra objects, no floating tiles, no checkerboard drawn into the background. Preserve real transparency around the rounded square. Exactly a 3x3 cube, not 2x2 or 4x4.
+First prompt:
+Use case: background-extraction. Edit target: the supplied existing TwistForge app icon. Remove ONLY the entire graphite rounded-square backing tile, its border, cast shadow, and all surrounding background. Keep the same single polished isometric 3x3 cube with precisely 3 rows and 3 columns of tiles per visible face, warm ivory top, sage/forest green left, periwinkle blue right; preserve its orientation, identity, proportions, lighting, bevels, and crisp seams. Output just that cube cut out on genuinely transparent alpha, with no enclosing square/circle/tile/frame whatsoever and no separate drop shadow beneath it. Center and enlarge the isolated cube to occupy about 88 percent of the square canvas height with small even outer transparent padding; do not clip any cube corner. Do not redesign the cube or add anything. No text, no logos, no watermark, no fake checkerboard drawn into the pixels. This is the reusable transparent foreground for Windows ICO and Android adaptive icons.
+
+Final cleanup prompt:
+Precise alpha-mask cleanup only. Keep the supplied isolated isometric 3x3 cube exactly the same: same composition, ivory top, green left, blue right, 3x3 tiles, perspective, materials and lighting. Remove every isolated colored speck and pixel island outside the cube, especially red/yellow dots above it and green flecks along its outside margin. Make the surrounding alpha completely empty. Clean the contour of the cube so there is no colored fringe, halo or noise outside its silhouette. Do not add any backing tile, square, circle, frame or shadow. Do not change the cube or its placement/scale. Output the same cube with a clean anti-aliased transparent silhouette suitable for a small production application icon.

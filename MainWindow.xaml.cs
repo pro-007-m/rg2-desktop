@@ -25,7 +25,7 @@ public partial class MainWindow : Window
     {
         get
         {
-            Version version = typeof(MainWindow).Assembly.GetName().Version ?? new Version(1, 7, 0);
+            Version version = typeof(MainWindow).Assembly.GetName().Version ?? new Version(1, 7, 1);
             return $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
         }
     }
